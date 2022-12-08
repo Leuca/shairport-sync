@@ -1,0 +1,5 @@
+version: "1"
+rules:
+  - base: development
+    upstream: mikebrady:development
+    mergeMethod: merge

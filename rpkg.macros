@@ -1,0 +1,7 @@
+function shairport_version {
+	cat configure.ac | grep AC_INIT | cut -d" " -f 2 | cut -d"[" -f 2 | cut -d"]" -f 1 | cut -d"-" -f 1
+}
+
+function shairport_release {
+	head RELEASENOTES-DEVELOPMENT.md | sed -ne '/Version/p' | head -1 | cut -d"-" -f 3
+}
