@@ -11,39 +11,32 @@ Source:         {{{ git_dir_pack }}}
 
 Patch0:         copr.patch
 
-%{?systemd_requires}
 BuildRequires:  make
+BuildRequires:  automake
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
-BuildRequires:  kernel-devel
-BuildRequires:  alsa-lib-devel
-BuildRequires:  pulseaudio-libs-devel
-BuildRequires:  avahi-devel
-BuildRequires:  libconfig-devel
-BuildRequires:  libdaemon-devel
-BuildRequires:  popt-devel
-BuildRequires:  soxr-devel
-BuildRequires:  systemd
-BuildRequires:  pkgconfig(libconfig)
-BuildRequires:  pkgconfig(libavutil)
-BuildRequires:  pkgconfig(libavcodec)
-BuildRequires:  pkgconfig(libavformat)
-BuildRequires:  pkgconfig(popt)
-BuildRequires:  pkgconfig(avahi-core)
-BuildRequires:  pkgconfig(alsa)
-BuildRequires:  pkgconfig(soxr)
+BuildRequires:  git
 BuildRequires:  autoconf
 BuildRequires:  automake
-BuildRequires:  libalac-devel
-BuildRequires:  xmltoman
+BuildRequires:  avahi-devel
+BuildRequires:  libconfig-devel
+BuildRequires:  openssl-devel
+BuildRequires:  popt-devel
+BuildRequires:  soxr-devel
+BuildRequires:  libplist-devel
 BuildRequires:  libsodium-devel
 BuildRequires:  libgcrypt-devel
 BuildRequires:  libuuid-devel
-BuildRequires:  libplist-devel
+BuildRequires:  libalac-devel
 BuildRequires:  vim-common
-BuildRequires:  openssl-devel
+BuildRequires:  alsa-lib-devel
+BuildRequires:  pulseaudio-libs-devel
+BuildRequires:  systemd-rpm-macros
+# Allow build with both free and non-free versions
+BuildRequires:  %{_libdir}/libavformat.so
+BuildRequires:  %{_libdir}/libavutil.so
+BuildRequires:  %{_libdir}/libavcodec.so
 
-Requires:       avahi
 Requires:       nqptp
 
 %description
