@@ -1,7 +1,7 @@
-Name:           {{{ git_dir_name }}}
+Name:           {{{ git_dir_name }}}-unstable
 Version:        {{{ shairport_version }}}
 Release:        {{{ shairport_release }}}%{?dist}
-Summary:        AirTunes emulator. Multi-Room with Audio Synchronisation
+Summary:        AirTunes emulator. Multi-Room with Audio Synchronisation (unstable)
 # MIT licensed except for tinysvcmdns under BSD, 
 # FFTConvolver/ under GPLv3+ and audio_sndio.c 
 # under ISC
@@ -37,16 +37,18 @@ BuildRequires:  %{_libdir}/libavformat.so
 BuildRequires:  %{_libdir}/libavutil.so
 BuildRequires:  %{_libdir}/libavcodec.so
 
-Requires:       nqptp
+Requires:       nqptp-unstable
 
 %description
 Shairport Sync emulates an AirPort Express for the purpose of streaming audio
- from iTunes, iPods, iPhones, iPads and AppleTVs. Audio played by a Shairport
- Sync-powered device stays synchronised with the source and hence with similar
- devices playing the same source. Thus, for example, synchronised multi-room
- audio is possible without difficulty. (Hence the name Shairport Sync, BTW.)
+from iTunes, iPods, iPhones, iPads and AppleTVs. Audio played by a Shairport
+Sync-powered device stays synchronised with the source and hence with similar
+devices playing the same source. Thus, for example, synchronised multi-room
+audio is possible without difficulty. (Hence the name Shairport Sync, BTW.)
 
 Shairport Sync does not support AirPlay video or photo streaming.
+
+This version of Shairport Sync has been built from the development branch
 
 %prep
 {{{ git_dir_setup_macro }}}
