@@ -1,3 +1,16 @@
+Version 4.1-dev-922-gffeeacc4
+====
+**Enhancement**
+* When built for AirPlay 2, include the Shared Memory Interface (SMI) version number in the version string, in the form: `smi*` where `*` is the version number, e.g. `smi9`. This must be same as the SMI version number of NQPTP, which can be listed by entering `$ nqptp -V`.
+
+Version 4.1-dev-919-gbd068fb6
+====
+**Enhancements**
+* Allow compilation with `libplist` 2.3.0. Thanks to [Markus Reiter](https://github.com/reitermarkus) for the update.
+* Updates to GitHub Action Workflows -- many thanks to [yubiuser](https://github.com/yubiuser) for this detailed work.
+* Include PulseAudio support in the Shairport Sync builds within the Docker images. Thanks to [Ferdynand Naczynski](https://github.com/nipsufn) and thanks also to [Noel Hibbard](https://github.com/noelhibbard) for championing this idea for a long time.
+* Documentation Updates.
+
 Version 4.1-dev-896-g03961830
 ====
 **Bug Fix**
@@ -22,7 +35,7 @@ Version 4.1-dev-874-g551734b3
 Version 4.1-dev-872-g65c6975e
 ====
 **Bug Fix**
-* Remove three potential race conditions between Shairport Sync opening a TCP connection and the client checkiing that the connections are open. The problem was that the connections were being opened in threads that were created just before the client was given the connection information. If the threads were delayed (e.g. on a slow or busy processor), the client could use the connection information to check the connections, but find that they were not (yet) open. This could cause the client to terminate the session immediately with a `TEARDOWN`. The fix was to open the connections before creating those threads and before sending the connection information back to the client. In this way, the connections are guaranteed to be open before the client has the information it needs to try to open them, even if the threads ared delayed in starting. This bug would manifest itself by allowing play to proceed but not play anything.
+* Remove three potential race conditions between Shairport Sync opening a TCP connection and the client checking that the connections are open. The problem was that the connections were being opened in threads that were created just before the client was given the connection information. If the threads were delayed (e.g. on a slow or busy processor), the client could use the connection information to check the connections, but find that they were not (yet) open. This could cause the client to terminate the session immediately with a `TEARDOWN`. The fix was to open the connections before creating those threads and before sending the connection information back to the client. In this way, the connections are guaranteed to be open before the client has the information it needs to try to open them, even if the threads ared delayed in starting. This bug would manifest itself by allowing play to proceed but not play anything.
 
 Version 4.1-dev-870-gc924387a
 ====
