@@ -41,11 +41,14 @@
 
 // note -- these are hardwired into this code.
 #define DEFAULT_FORMAT SPA_AUDIO_FORMAT_S16_LE
+#define DEFAULT_BYTES_PER_SAMPLE 2
+
 #define DEFAULT_RATE 44100
 #define DEFAULT_CHANNELS 2
+#define DEFAULT_BUFFER_SIZE_IN_SECONDS 4
 
 // Four seconds buffer -- should be plenty
-#define buffer_allocation 44100 * 4 * 2 * 2
+#define buffer_allocation DEFAULT_RATE * DEFAULT_BUFFER_SIZE_IN_SECONDS * DEFAULT_BYTES_PER_SAMPLE * DEFAULT_CHANNELS
 
 static pthread_mutex_t buffer_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -101,7 +104,7 @@ static void on_process(void *userdata) {
     struct spa_buffer *buf = b->buffer;
     uint8_t *dest = buf->datas[0].data;
     if (dest != NULL) {
-      int stride = sizeof(int16_t) * DEFAULT_CHANNELS;
+      int stride = DEFAULT_BYTES_PER_SAMPLE * DEFAULT_CHANNELS;
       
       // note: the requested field is the number of frames, not bytes, requested
       int max_possible_frames = SPA_MIN(b->requested, buf->datas[0].maxsize / stride);
@@ -170,6 +173,13 @@ static void deinit(void) {
   pw_thread_loop_destroy(data.loop);
   pw_deinit();
   free(audio_lmb); // deallocate that buffer
+  if (config.pw_application_name)
+    free(config.pw_application_name);
+  if (config.pw_node_name)
+    free(config.pw_node_name);
+  config.pw_application_name = config.pw_node_name = NULL;
+
+
 }
 
 static int init(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
@@ -187,12 +197,22 @@ static int init(__attribute__((unused)) int argc, __attribute__((unused)) char *
   // do the "general" audio  options. Note, these options are in the "general" stanza!
   parse_general_audio_options();
 
-  /*
+  
     // now any PipeWire-specific options
     if (config.cfg != NULL) {
       const char *str;
+
+      /* Get the Application Name. */
+      if (config_lookup_string(config.cfg, "pw.application_name", &str)) {
+        config.pw_application_name = (char *)str;
+      }
+
+      /* Get the PipeWire node name. */
+      if (config_lookup_string(config.cfg, "pa.node_name", &str)) {
+        config.pw_node_name = (char *)str;
+      }      
     }
-  */
+  
   // finished collecting settings
 
   // allocate space for the audio buffer
@@ -219,22 +239,33 @@ static int init(__attribute__((unused)) int argc, __attribute__((unused)) char *
   pw_thread_loop_lock(data.loop);
 
   pw_thread_loop_start(data.loop);
+  
+  char* appname = config.pw_application_name;
+  if (appname == NULL)
+    appname = "Shairport Sync";
+  
+  char* nodename = config.pw_node_name;
+  if (nodename == NULL)
+    nodename = "Shairport Sync";
+  
+  
 
   props = pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Playback",
-                            PW_KEY_MEDIA_ROLE, "Music", PW_KEY_APP_NAME, "Shairport Sync", NULL);
+                            PW_KEY_MEDIA_ROLE, "Music", PW_KEY_APP_NAME, appname,
+                            PW_KEY_NODE_NAME, nodename, NULL);
 
-  data.stream = pw_stream_new_simple(pw_thread_loop_get_loop(data.loop), "shairport-sync", props,
+  data.stream = pw_stream_new_simple(pw_thread_loop_get_loop(data.loop), config.appName, props,
                                      &stream_events, &data);
 
-  /* Make one parameter with the supported formats. The SPA_PARAM_EnumFormat
-   * id means that this is a format enumeration (of 1 value). */
+  // Make one parameter with the supported formats. The SPA_PARAM_EnumFormat
+  // id means that this is a format enumeration (of 1 value).
   params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat,
-                                         &SPA_AUDIO_INFO_RAW_INIT(.format = SPA_AUDIO_FORMAT_S16_LE,
+                                         &SPA_AUDIO_INFO_RAW_INIT(.format = DEFAULT_FORMAT,
                                                                   .channels = DEFAULT_CHANNELS,
                                                                   .rate = DEFAULT_RATE));
 
-  /* Now connect this stream. We ask that our process function is
-   * called in a realtime thread. */
+  // Now connect this stream. We ask that our process function is
+  // called in a realtime thread.
   pw_stream_connect(data.stream, PW_DIRECTION_OUTPUT, PW_ID_ANY,
                     PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
                         PW_STREAM_FLAG_RT_PROCESS,
@@ -253,7 +284,7 @@ static int play(__attribute__((unused)) void *buf, int samples,
                 __attribute__((unused)) uint64_t playtime) {
   // copy the samples into the queue
   debug(3, "play %u samples; %u bytes already in the buffer.", samples, audio_occupancy);
-  size_t bytes_to_transfer = samples * 2 * 2;
+  size_t bytes_to_transfer = samples * DEFAULT_CHANNELS * DEFAULT_BYTES_PER_SAMPLE;
   pthread_mutex_lock(&buffer_mutex);
   size_t bytes_available = audio_size - audio_occupancy;
   if (bytes_available < bytes_to_transfer)
@@ -303,7 +334,7 @@ int delay(long *the_delay) {
     delay_in_ns = delay_in_ns / timing_data.time_info.rate.denom;
 
     int64_t total_delay_now_ns = delay_in_ns - interval_from_process_time_to_now;
-    int64_t total_delay_now_frames = (total_delay_now_ns * 44100) / 1000000000 + timing_data.frames;
+    int64_t total_delay_now_frames = (total_delay_now_ns * DEFAULT_RATE) / 1000000000 + timing_data.frames;
     total_delay_now_frames_long = total_delay_now_frames;
     debug(3, "total delay in frames: %ld.", total_delay_now_frames_long);
 
@@ -320,11 +351,12 @@ int delay(long *the_delay) {
     */
 
   } else {
-    debug(1, "can't get time info.");
+    warn("Shairport Sync's PipeWire backend can not get timing information from the PipeWire "
+         "system. Is PipeWire running?");
   }
 
   pthread_mutex_lock(&buffer_mutex);
-  result = total_delay_now_frames_long + audio_occupancy / (2 * 2);
+  result = total_delay_now_frames_long + audio_occupancy / (DEFAULT_BYTES_PER_SAMPLE * DEFAULT_CHANNELS);
   pthread_mutex_unlock(&buffer_mutex);
   *the_delay = result;
   return reply;
