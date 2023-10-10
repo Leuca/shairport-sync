@@ -1,20 +1,20 @@
 diff --git a/Makefile.am b/Makefile.am
-index 09fb9692..6f51ff15 100644
+index d9cfbf6e..9630985a 100644
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -253,16 +253,6 @@ endif # USE_MPRIS
+@@ -259,16 +259,6 @@ endif # USE_MPRIS
  
  endif # INSTALL_CONFIG_FILES
  
 -INSTALL_GROUP_TARGET = install-group-local
 -
 -$(INSTALL_GROUP_TARGET):
--	getent group shairport-sync &>/dev/null || groupadd -r shairport-sync >/dev/null
+-	getent group shairport-sync &>/dev/null || groupadd -r shairport-sync &>/dev/null
 -
 -INSTALL_USER_TARGET = install-user-local
 -
 -$(INSTALL_USER_TARGET): $(INSTALL_GROUP_TARGET)
--	getent passwd shairport-sync &> /dev/null || useradd -r -M -g shairport-sync -s /usr/sbin/nologin -G audio shairport-sync >/dev/null
+-	getent passwd shairport-sync &>/dev/null || useradd -r -M -g shairport-sync -s /usr/sbin/nologin -G audio shairport-sync &>/dev/null
 -
  if INSTALL_SYSTEMV
  

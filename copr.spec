@@ -64,10 +64,10 @@ autoreconf -i -f
 rm %{buildroot}/etc/shairport-sync.conf.sample
 
 %pre
-getent group %{name} &>/dev/null || groupadd --system %{name} >/dev/null
-getent passwd %{name} &> /dev/null || useradd --system -c "%{name} User" \
-        -d %{_sharedstatedir}/%{name} -m -g %{name} -s /sbin/nologin \
-        -G audio %{name} >/dev/null
+getent group %{name} &>/dev/null || groupadd -r %{name} &>/dev/null
+getent passwd %{name} &>/dev/null || useradd -r -M -g %{name} \
+        -s /sbin/nologin \
+        -G audio %{name} &>/dev/null
 
 %post
 %systemd_post %{name}.service
