@@ -4,19 +4,22 @@ If your car audio has an AUX input, you can get AirPlay in your car using Shairp
 ## The Basic Idea
 
 The basic idea is to use a small Linux computer to create an isolated WiFi network (a "car network") and run Shairport Sync on it to provide an AirPlay service. An iPhone or an iPad with cellular capability can simultaneously connect to internet radio, YouTube, Apple Music, Spotify, etc. over the cellular network and send AirPlay audio through the car network to the AirPlay service provided by Shairport Sync. This sends the audio to the computer's DAC which is connected to the AUX input of your car audio.
-
-Note that Android devices can not, so far, do this trick of using the two networks simultaneously.
+### Notes
+1. **Android:** Android phones and tablets can not, so far, do this trick of using the two networks simultaneously.
+2. **Volume Control, AirPlay 2:** In iOS 17 and later, if Shairport Sync is built for AirPlay 2, you won't be able to control the volume from your iOS device. This is because volume control settings are not sent from the iOS device to Shairport Sync in this mode.
+In practice, this should not be a problem -- you control the volume using the car audio's volume control, the same as any other source.
+3. **Volume Control, classic AirPlay ("AirPlay 1"):** if Shairport Sync is built for classic AirPlay, you can control the volume from your iOS device. 
 
 ## Example
 
-**Important Note** This guide can not be used for the latest (time of writing: October 2023) version of Rasberry Pi OS (Bookworm) because the `dhcpcd` package is no longer part of the system. It does work for Rasberry Pi OS (Bullseye)
+If you are updating an existing installation, please refer to the Updating section below.
 
 In this example, a Raspberry Pi Zero 2 W and a Pimoroni PHAT DAC are used. Shairport Sync will be built for AirPlay 2 operation, but you can build it for "classic" AirPlay (aka AirPlay 1) operation if you prefer. A Pi Zero W is powerful enough for classic AirPlay.
 
 Please note that some of the details of setting up networks are specific to the version of Linux used.
 
 ### Prepare the initial SD Image
-* Download Raspberry Pi OS Bullseye (Lite) and install it onto an SD Card using `Raspberry Pi Imager`. The Lite version is preferable to the Desktop version as it doesn't include a sound server like PulseAudio or PipeWire that can prevent direct access to the audio output device.
+* Download Raspberry Pi OS (Lite) and install it onto an SD Card using `Raspberry Pi Imager`. The Lite version is preferable to the Desktop version as it doesn't include a sound server like PulseAudio or PipeWire that can prevent direct access to the audio output device.
 * Before writing the image to the card, use the Settings control on `Raspberry Pi Imager` to set hostname, enable SSH and provide a username and password to use while building the system. Similarly, you can specify a wireless network the Pi will connect to while building the system. Later on, the Pi will be configured to start its own isolated network.
 * The next few steps are to add the overlay needed for the sound card. This may not be necessary in your case, but in this example a Pimoroni PHAT is being used. If you do not need to add an overlay, skip these steps.
   * Mount the card on a Linux machine. Two drives should appear – a `boot` drive and a `rootfs` drive.
@@ -64,6 +67,7 @@ Download Shairport Sync, check out the `development` branch and configure, compi
 ```
 $ git clone https://github.com/mikebrady/shairport-sync.git
 $ cd shairport-sync
+$ git checkout development
 $ autoreconf -fi
 $ ./configure --sysconfdir=/etc --with-alsa \
     --with-soxr --with-avahi --with-ssl=openssl --with-systemd --with-airplay-2
@@ -91,17 +95,22 @@ alsa =
 };
 
 ```
-Two `general` settings are worth noting. First, the option to ignore the sending device's volume control is enabled. This means that the car audio's volume control is the only one that affects the audio volume. Of course this is a matter of personal preference.
-Second, the maximum output offered by the DAC to the AUX port of the car audio can be reduced if it is overloading the input circuits. Again, that's a matter for personal selection and adjustment.
+Two `general` settings are worth noting.
+1. First, the option to ignore the sending device's volume control is enabled. This means that the car audio's volume control is the only one that affects the audio volume.
+   As of iOS 17 it appears that volume control information is not forwarded to Shairport Sync when it is used like this. For this reason, it is important to set the `ignore_volume_control` setting in the configuration file to `"YES"`. This will allow audio to be forwarded to the car audio using the full volume range of the DAC instead of at the default initial volume, which may be quite low and which can't be changed from the iOS device.
+   
+2. Second, the maximum output offered by the DAC to the AUX port of the car audio can be reduced if it is overloading the car audio's input circuits. Again, that's a matter for personal selection and adjustment.
 
 The `alsa` settings are for the Pimoroni PHAT – it does not have a hardware mixer, so no `mixer_control_name` is given.
 
-Note that the DAC's 32-bit capability is automatically selected if available, so there is no need to set it here. Similarly, since `soxr` support is included in the build, `soxr` interpolation will be automatically enabled if the device is fast enough.
+The DAC's 32-bit capability is automatically selected if available, so there is no need to set it here. Similarly, since `soxr` support is included in the build, `soxr` interpolation will be automatically enabled if the device is fast enough.
+
+Note that if you're upgrading the operating system to e.g. from Bullseye to Bookworm, the location of the output devices may change, and the names of the mixer controls may also change. You can use [`sps-alsa-explore`](https://github.com/mikebrady/sps-alsa-explore) to investigate device names and mixer names.
 
 ### Extra Packages
 A number of packages to enable the Pi to work as a WiFi base station are needed:
 ```
-# apt-get install hostapd isc-dhcp-server
+# apt install --no-install-recommends hostapd isc-dhcp-server
 ```
 Disable both of these services from starting at boot time (this is because we will launch them sequentially later on):
 ```
@@ -166,11 +175,9 @@ Configure the startup sequence by adding commands to `/etc/rc.local` to start `h
 # This script is executed at the end of each multiuser runlevel.
 # Make sure that the script will "exit 0" on success or any other
 # value on error.
-#
-# In order to enable or disable this script just change the execution
-# bits.
-#
-# By default this script does nothing.
+
+# Uncomment the next line to exit the script, skipping the remainder of the script where the WiFi access point and Shairport Sync itself are started.
+# exit 0 # uncomment this line to exit the script here
 
 /sbin/iw dev wlan0 set power_save off
 /usr/sbin/hostapd -B -P /run/hostapd.pid /etc/hostapd/hostapd.conf
@@ -180,36 +187,46 @@ Configure the startup sequence by adding commands to `/etc/rc.local` to start `h
 /bin/sleep 2
 /bin/systemctl start shairport-sync
 
-exit 0
-
+exit 0 # normal exit here
 ```
 As you can see, the effect of these commands is to start the WiFi transmitter, give the base station the IP address `10.0.10.1`, start a DHCP server and finally start the Shairport Sync service.
 
 ### Final Steps
-Up to now, if you reboot the Pi, it will reconnect to your WiFi network, ignoring the instructions and settings you have given it to act as a base station. That is because the `wlan0` interface is still under the control of the `dhcpcd` service. So, the final step is to instruct the `dhcpcd` service not to manage `wlan0`. To do this, edit `/etc/dhcpcd.conf` and insert the following line at the start:
-```
-denyinterfaces wlan0
-```
-From this point on, at least on the Raspberry Pi, if you reboot the machine, it will not reconnect to your network. Instead, it will act as the WiFi base station you have configured with `hostapd` and `isc-dhcp-server`.
+You should now disable the `NetworkManager` or the `dhcpcd` service -- whichever of them is in your system -- so that they won't run when the system reboots.
+To do this, perform the appropriate one of the following commands:
 
-### Optimise startup time – Raspberry Pi Specific
+```
+# systemctl disable NetworkManager
+```
+or 
+```
+# systemctl disable dhcpcd
+```
 
-This is applicable to a Raspberry Pi only. Some of it may be applicable to other systems, but it has not been tested on them.
+From this point on, at least on the Raspberry Pi, if you were to power off and reboot the machine, it would not reconnect to your network. Instead, it would act as the WiFi base station you have configured with `hostapd` and `isc-dhcp-server`. 
+
+Next, the WiFi credentials you used to connect to the initial network (e.g. your home network) will have been stored in the system in plain text. This is convenient for when you want to reconnect to update (see later), but if you wish to delete them for any reason, they will be in `/etc/wpa_supplicant/wpa_supplicant.conf`
+
+When you are finished (including any optional steps below), carefully power down the machine before unplugging it from power:
+```
+# poweroff
+```
+
+### Optional: Optimise startup time – Raspberry Pi Specific
+
+This is applicable to a Raspberry Pi only and is optional. Some of it may be applicable to other systems, but it has not been tested on them.
 
 There are quite a few services that are not necessary for this setup. Disabling them can improve startup time. Running these commands disables them:
 
 ```
-sudo systemctl disable systemd-timesyncd.service
-sudo systemctl disable keyboard-setup.service
-sudo systemctl disable triggerhappy.service
-sudo systemctl disable dhcpcd.service
-sudo systemctl disable wpa_supplicant.service
-sudo systemctl disable dphys-swapfile.service
-sudo systemctl disable networking.service
+# systemctl disable systemd-timesyncd
+# systemctl disable keyboard-setup
+# systemctl disable triggerhappy
+# systemctl disable dphys-swapfile
 ```
 
-### Read-only mode – Raspberry Pi Specific
-Run `sudo raspi-config` and then choose `Performance Options` > `Overlay Filesystem` and choose to enable the overlay filesystem, and to set the boot partition to be write-protected. 
+### Optional: Read-only mode – Raspberry Pi Specific
+This is applicable to a Raspberry Pi only and is optional. Run `sudo raspi-config` and then choose `Performance Options` > `Overlay Filesystem` and choose to enable the overlay filesystem, and to set the boot partition to be write-protected. 
 
 ### Ready
 Install the Raspberry Pi in your car. It should be powered from a source that is switched off when you leave the car, otherwise the slight current drain will eventually flatten the car's battery.
@@ -221,39 +238,79 @@ When the power source is switched on, typically when you start the car, it will 
 ---
 
 ## Updating
-From time to time, you may wish to update this installation. However, in order to update Shairport Sync, you must reconnect the system to a network that can access the internet. The easiest thing is to temporarily reconnect to the network you used when you created the system. To do that, you have to temporarily undo the "Final Steps" and some of the "Raspberry Pi Specific" steps you used. This will enable you to connect your device back to the network it was created on. You should then be able to update the operating system and libraries in the normal way and then update Shairport Sync.
+From time to time, you may wish to update this installation. Assuming you haven't deleted your original WiFi network credentials, the easiest thing is to temporarily reconnect to the network you used when you created the system. To do that, you have to temporarily undo the "Final Steps" and some of the "Raspberry Pi Specific" steps you used. This will enable you to connect your device back to the network it was created on. You should then be able to update the operating system and libraries in the normal way and then update Shairport Sync.
 
 So, take the following steps:
-
+### Temporarily reconnect to the original network and update
 1. If it's a Raspberry Pi and you have enabled the Read-only mode, you must take the device out of Read-only mode:  
 Run `sudo raspi-config` and then choose `Performance Options` > `Overlay Filesystem` and choose to disable the overlay filesystem and to set the boot partition not to be write-protected. This is so that changes can be written to the file system; you can make the filesystem read-only again later. Save the changes and reboot the system.
 
-2. If you have disabled the `dhcpcd`, `wpa_supplicant` or `systemd-timesyncd` services as suggested in the "Optimise startup time -- Raspberry Pi Specific" section, you need to temporarily re-enable them:  
-`# systemctl enable dhcpcd.service`  
-`# systemctl enable wpa_supplicant.service`  
-`# systemctl enable systemd-timesyncd.service`  
-Reboot.
+2. Undo a number of modification you may have made during previous installations.
+   1. Remove a possible modification from a file. If there is a file called `/etc/dhcpcd.conf` and if the first line reads:
+      ```
+      denyinterfaces wlan0
+      ```
+      then delete that line or comment it out -- it it no longer needed going forward.
+      If the file `/etc/dhcpcd.conf` doesn't exist, or the first line is not `denyinterfaces wlan0` as given here, then you don't need to do anything.
+      
+      (The reason for this suggestion is that a simpler way of preventing the `dhcpcd` service from trying to manage the `wlan0` interface is now used -- the `dhcpcd` service is now completely disabled.)
+   3. Make sure you disable the `wpa_supplicant` service:
+      ```
+      # systemctl disable wpa_supplicant
+      ```
+      
+      (The reason for this suggestion is that it is important that the `wpa_supplicant` service not be running when the system is operating as a WiFi access point. Previous advice to enable the `wpa_supplicant` service when updating may result in it continuing to run even when the `dhcpcd` or `NetworkManager` has been disabled. So, please be sure to disable the `wpa_supplicant` service.)
 
-3. To allow your device to reconnect to the network it was created on, edit `/etc/dhcpcd.conf` and comment out the following line at the start:  
-`denyinterfaces wlan0`  
-so that it looks like this:  
-`# denyinterfaces wlan0`  
+4. Re-enable either `NetworkManager` or `dhcpcd` as appropriate:
+   ```
+   # systemctl enable NetworkManager
+   ```
+   or
+   ```
+   # systemctl enable dhcpcd
+   ```
+5. If you had disabled the `systemd-timesyncd` service as suggested in the "Optimise startup time -- Raspberry Pi Specific" section, you need to temporarily re-enable it:   
+   ```
+   # systemctl enable systemd-timesyncd
+   ```
+6. Edit `/etc/rc.local` to exit the script before enabling the WiFi access point and starting Shairport Sync. Do this by uncommenting the line:
+   ```
+   # exit 0 # uncomment this line to exit the script here
+   ```
+   so that it looks like this:
+   ```
+   exit 0 # uncomment this line to exit the script here
+   ```
+Save the changes.
+
 From this point on, if you reboot the machine, it will connect to the network it was configured on, i.e. the network you used when you set it up for the first time. This is because the name and password of the network it was created on would have been placed in `/etc/wpa_supplicant/wpa_supplicant` when the system was initially configured and will still be there.
+7. Reboot and do normal updating.
 
-4. Reboot and do Normal Updating
+### Revert to normal operation
+When you are finished updating, you need to undo the temporary changes you made to the setup, as follows:
 
-   You can perform updates in the normal way. When you are finished, you need to undo the temporary changes you made to the setup, as follows:
+1. First, disable `NetworkManager` or `dhcpcd` as appropriate:
+   ```
+   # systemctl disable NetworkManager
+   ```
+   or 
+   ```
+   # systemctl disable dhcpcd
+   ```
+2. Next, if you had temporarily re-enabled services that are normally disabled, then it's time to disable them again:
+   ```
+   # systemctl disable systemd-timesyncd 
+   ```
+3. Edit `/etc/rc.local` to perform the entire script before exiting, so that it enables the WiFi access point and starts Shairport Sync. Do this by commenting out the line:
+   ```
+   exit 0 # uncomment this line to exit the script now
+   ```
+   so that it loooks like this:
+   ```
+   # exit 0 # uncomment this line to exit the script now
+   ```
+Save the changes.
 
-5. If you had temporarily re-enabled services that are normally disabled, then it's time to disable them again:  
-`# systemctl disable dhcpcd.service`  
-`# systemctl disable wpa_supplicant.service`  
-`# systemctl disable systemd-timesyncd.service`  
+4. Reboot. The system should start as it would if it was in the car.
 
-6. To re-enable the system to create its own network, edit `/etc/dhcpcd.conf` and uncomment the line that you had temporarily commented out at the start of the update. Change:  
-`# denyinterfaces wlan0`  
-so that it looks like this:  
-`denyinterfaces wlan0`  
-
-7. Reboot. The system should start as it would if it was in the car.
-
-8. If the device is a Raspberry Pi and you wish to make the file system read-only, connect to the system, run `sudo raspi-config` and then choose `Performance Options` > `Overlay Filesystem`. In there, choose to enable the overlay filesystem, and to set the boot partition to be write-protected. Do a final reboot and check that everyting is in order.
+5. If the device is a Raspberry Pi and you wish to make the file system read-only, connect to the system, run `sudo raspi-config` and then choose `Performance Options` > `Overlay Filesystem`. In there, choose to enable the overlay filesystem, and to set the boot partition to be write-protected. Do a final reboot and check that everyting is in order.
