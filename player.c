@@ -2057,9 +2057,9 @@ void *player_thread_func(void *arg) {
   int64_t tsum_of_sync_errors, tsum_of_corrections, tsum_of_insertions_and_deletions,
       tsum_of_drifts;
   int64_t previous_sync_error = 0, previous_correction = 0;
-  uint64_t minimum_dac_queue_size;
-  int32_t minimum_buffer_occupancy;
-  int32_t maximum_buffer_occupancy;
+  uint64_t minimum_dac_queue_size = 0;
+  int32_t minimum_buffer_occupancy = 0;
+  int32_t maximum_buffer_occupancy = 0;
 
 #ifdef CONFIG_AIRPLAY_2
   conn->ap2_audio_buffer_minimum_size = -1;

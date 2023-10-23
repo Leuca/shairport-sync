@@ -1,5 +1,16 @@
+Version 4.3.3-dev-7-ga7603893
+===
+* Remove the a few compilation warnings during a Docker build -- the warnings were that some variables possibly being used uninitialised.
+  
+Version 4.3.3-dev-3-g2a5c49d3
+===
+* Update [CAR INSTALL](https://github.com/mikebrady/shairport-sync/blob/development/CAR%20INSTALL.md) for Bookworm, which uses `NetworkManager` and does not use `dhcpcd`.
+* Changes to the car installation setup may result in more stable WiFi operation.
+
 Version 4.3.2-dev-58-gb70dd463
 ===
+This becamse Release 4.3.2, approximately.
+
 **Investigation -- continued**
 * Return `501` ("Not Implemented") instead of `200` ("OK") in response to a `POST` message with the argument `/feedback` on a Classic AirPlay connection. 
 
