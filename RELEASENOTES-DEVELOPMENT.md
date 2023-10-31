@@ -1,3 +1,8 @@
+Version 4.3.3-dev-1-g9ab85989
+===
+* Forgot to push tag 4.3.3-dev, so "back" to 4.3.3-dev-1. Apologies for the confusion. The commit hash is good.
+* Further updates to [CAR INSTALL](https://github.com/mikebrady/shairport-sync/blob/development/CAR%20INSTALL.md), hopefully to make updates a bit simpler.
+  
 Version 4.3.3-dev-7-ga7603893
 ===
 * Remove the a few compilation warnings during a Docker build -- the warnings were that some variables possibly being used uninitialised.
