@@ -594,7 +594,8 @@ int get_play_lock(rtsp_conn_info *conn, int allow_session_interruption) {
            principal_conn->connection_number);
   } else if (allow_session_interruption != 0) {
     rtsp_conn_info *previous_principal_conn = principal_conn;
-    principal_conn = NULL; // no longer the principal conn
+    // important -- demote the principal conn before cancelling it
+    principal_conn = NULL;
     pthread_cancel(previous_principal_conn->thread);
     // the previous principal thread will block on the principal conn lock when exiting
     // so it's important not to wait for it here, e.g. don't put in a pthread_join here.
@@ -2715,7 +2716,7 @@ void teardown_phase_two(rtsp_conn_info *conn) {
   }
 
   // only update these things if you're (still) the principal conn
-  pthread_rwlock_rdlock(&principal_conn_lock); // don't let the principal_conn be changed
+  pthread_rwlock_wrlock(&principal_conn_lock); // don't let the principal_conn be changed
   pthread_cleanup_push(rwlock_unlock, (void *)&principal_conn_lock);
   if (principal_conn == conn) {
     if (conn->airplay_stream_category == ptp_stream) {
@@ -2781,7 +2782,7 @@ void teardown(rtsp_conn_info *conn) {
   }
 
   // only update these things if you're (still) the principal conn
-  pthread_rwlock_rdlock(&principal_conn_lock); // don't let the principal_conn be changed
+  pthread_rwlock_wrlock(&principal_conn_lock); // don't let the principal_conn be changed
   pthread_cleanup_push(rwlock_unlock, (void *)&principal_conn_lock);
   if (principal_conn == conn) {
 #ifdef CONFIG_AIRPLAY_2
