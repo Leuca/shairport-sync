@@ -1,3 +1,10 @@
+Version 4.3.3-dev-4-g7e741465
+===
+* A slight change to [CAR INSTALL](https://github.com/mikebrady/shairport-sync/blob/development/CAR%20INSTALL.md), to add a two-second delay when accessing the WiFi device for the first time. It may be necessary in some cases, e.g. the Pi 3B.
+
+**Bug Fix**
+* Use `pthread_rwlock_wrlock` instead of the incorrect use of `pthread_rdlock_wrlock` when tearing down a connection. (This didn't seem to cause any problems, but it was definitely a bug, now fixed.)
+
 Version 4.3.3-dev-1-g9ab85989
 ===
 * Forgot to push tag 4.3.3-dev, so "back" to 4.3.3-dev-1. Apologies for the confusion. The commit hash is good.

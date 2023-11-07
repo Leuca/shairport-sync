@@ -179,6 +179,7 @@ Configure the startup sequence by adding commands to `/etc/rc.local` to start `h
 
 MODE=RUN
 
+/bin/sleep 2 # may be necessary while wlan0 becomes available
 /sbin/iw dev wlan0 set power_save off  # always do this
 
 if test $MODE = RUN ; then
