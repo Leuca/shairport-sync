@@ -708,7 +708,7 @@ void cleanup_threads(void) {
       conns[i] = NULL;
     }
     if (conns[i] != NULL) {
-      debug(2, "Airplay Volume for connection %d is %.6f.", conns[i]->connection_number,
+      debug(3, "Airplay Volume for connection %d is %.6f.", conns[i]->connection_number,
             suggested_volume(conns[i]));
       connection_count++;
     }
@@ -724,7 +724,7 @@ void cleanup_threads(void) {
       debug(2, "%d active connections.", connection_count);
     old_connection_count = connection_count;
   }
-  debug(2, "Airplay Volume for new connections is %.6f.", suggested_volume(NULL));
+  debug(3, "Airplay Volume for new connections is %.6f.", suggested_volume(NULL));
 }
 
 // park a null at the line ending, and return the next line pointer
@@ -1533,7 +1533,7 @@ int msg_write_response(rtsp_conn_info *conn, rtsp_message *resp) {
   // Here, if there's content, write the Content-Length header ...
 
   if (resp->contentlength) {
-    debug(2, "Responding with content of length %d", resp->contentlength);
+    debug(3, "Responding with content of length %d", resp->contentlength);
     n = snprintf(p, pktfree, "Content-Length: %d\r\n", resp->contentlength);
     pktfree -= n;
     p += n;
@@ -1675,7 +1675,7 @@ void handle_record(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) 
 
 void handle_get_info(__attribute((unused)) rtsp_conn_info *conn, rtsp_message *req,
                      rtsp_message *resp) {
-  debug_log_rtsp_message(2, "GET /info:", req);
+  debug_log_rtsp_message(3, "GET /info:", req);
   if (rtsp_message_contains_plist(req)) { // it's stage one
     // get version of AirPlay -- it might be too old. Not using it yet.
     char *hdr = msg_get_header(req, "User-Agent");
@@ -1684,7 +1684,7 @@ void handle_get_info(__attribute((unused)) rtsp_conn_info *conn, rtsp_message *r
         hdr = hdr + strlen("AirPlay/");
         // double airplay_version = 0.0;
         // airplay_version = atof(hdr);
-        debug(2, "Connection %d: GET_INFO: Source AirPlay Version is: %s.", conn->connection_number,
+        debug(3, "Connection %d: GET_INFO: Source AirPlay Version is: %s.", conn->connection_number,
               hdr);
       }
     }
@@ -1707,7 +1707,7 @@ void handle_get_info(__attribute((unused)) rtsp_conn_info *conn, rtsp_message *r
       debug(1, "GET /info Stage 1: first item in qualifier array not a string");
       goto user_fail;
     }
-    debug(2, "GET /info Stage 1: qualifier: %s", qualifier_array_val_cstr);
+    debug(3, "GET /info Stage 1: qualifier: %s", qualifier_array_val_cstr);
     plist_free(info_plist);
     free(qualifier_array_val_cstr);
 
@@ -1794,7 +1794,7 @@ void handle_get_info(__attribute((unused)) rtsp_conn_info *conn, rtsp_message *r
       free(qualifier_response_data);
     }
     msg_add_header(resp, "Content-Type", "application/x-apple-binary-plist");
-    debug_log_rtsp_message(2, "GET /info Stage 1 Response:", resp);
+    debug_log_rtsp_message(3, "GET /info Stage 1 Response:", resp);
     resp->respcode = 200;
     return;
 
@@ -1819,7 +1819,7 @@ void handle_get_info(__attribute((unused)) rtsp_conn_info *conn, rtsp_message *r
     plist_to_bin(response_plist, &resp->content, &resp->contentlength);
     plist_free(response_plist);
     msg_add_header(resp, "Content-Type", "application/x-apple-binary-plist");
-    debug_log_rtsp_message(2, "GET /info Stage 2 Response", resp);
+    debug_log_rtsp_message(3, "GET /info Stage 2 Response", resp);
     resp->respcode = 200;
     return;
   }
@@ -2037,9 +2037,9 @@ void handle_setrateanchori(rtsp_conn_info *conn, rtsp_message *req, rtsp_message
 }
 
 void handle_get(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
-  debug(2, "Connection %d: GET %s :: Content-Length %d", conn->connection_number, req->path,
+  debug(3, "Connection %d: GET %s :: Content-Length %d", conn->connection_number, req->path,
         req->contentlength);
-  debug_log_rtsp_message(2, "GET request", req);
+  debug_log_rtsp_message(3, "GET request", req);
   if (strcmp(req->path, "/info") == 0) {
     handle_get_info(conn, req, resp);
   } else {
@@ -2202,7 +2202,7 @@ void handle_pair_verify(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *r
   uint8_t *body = NULL;
   size_t body_len = 0;
   struct pair_result *result;
-  debug(2, "Connection %d: pair-verify Content-Length %d", conn->connection_number,
+  debug(3, "Connection %d: pair-verify Content-Length %d", conn->connection_number,
         req->contentlength);
 
   if (!conn->ap2_pairing_context.verify_ctx) {
@@ -2238,7 +2238,7 @@ out:
   resp->contentlength = body_len;
   if (body)
     msg_add_header(resp, "Content-Type", "application/octet-stream");
-  debug_log_rtsp_message(2, "pair-verify response", resp);
+  debug_log_rtsp_message(3, "pair-verify response", resp);
 }
 
 void handle_pair_setup(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
@@ -2284,7 +2284,7 @@ out:
   resp->contentlength = body_len;
   if (body)
     msg_add_header(resp, "Content-Type", "application/octet-stream");
-  debug_log_rtsp_message(2, "pair-setup response", resp);
+  debug_log_rtsp_message(3, "pair-setup response", resp);
 }
 
 void handle_fp_setup(__attribute__((unused)) rtsp_conn_info *conn, rtsp_message *req,
@@ -2427,9 +2427,9 @@ void handle_configure(rtsp_conn_info *conn __attribute__((unused)),
 
 void handle_feedback(rtsp_conn_info *conn, __attribute__((unused)) rtsp_message *req,
                      __attribute__((unused)) rtsp_message *resp) {
-  debug(2, "Connection %d: POST %s Content-Length %d", conn->connection_number, req->path,
+  debug(3, "Connection %d: POST %s Content-Length %d", conn->connection_number, req->path,
         req->contentlength);
-  debug_log_rtsp_message(2, NULL, req);
+  debug_log_rtsp_message(3, NULL, req);
   if (conn->airplay_stream_category == remote_control_stream) {
     plist_t array_plist = plist_new_array();
 
@@ -2440,7 +2440,7 @@ void handle_feedback(rtsp_conn_info *conn, __attribute__((unused)) rtsp_message 
     plist_free(response_plist);
 
     msg_add_header(resp, "Content-Type", "application/x-apple-binary-plist");
-    debug_log_rtsp_message(2, "FEEDBACK response (remote_control_stream):", resp);
+    debug_log_rtsp_message(3, "FEEDBACK response (remote_control_stream):", resp);
   }
 
   /* not finished yet
@@ -2468,7 +2468,7 @@ void handle_command(__attribute__((unused)) rtsp_conn_info *conn, rtsp_message *
                     __attribute__((unused)) rtsp_message *resp) {
   debug(2, "Connection %d: POST %s Content-Length %d", conn->connection_number, req->path,
         req->contentlength);
-  debug_log_rtsp_message(2, NULL, req);
+  debug_log_rtsp_message(3, NULL, req);
   if (rtsp_message_contains_plist(req)) {
     plist_t command_dict = NULL;
     plist_from_memory(req->content, req->contentlength, &command_dict);
@@ -2580,9 +2580,9 @@ void handle_post(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
 }
 
 void handle_setpeers(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
-  debug(2, "Connection %d: SETPEERS %s Content-Length %d", conn->connection_number, req->path,
+  debug(3, "Connection %d: SETPEERS %s Content-Length %d", conn->connection_number, req->path,
         req->contentlength);
-  debug_log_rtsp_message(2, "SETPEERS request", req);
+  debug_log_rtsp_message(3, "SETPEERS request", req);
   /*
     char timing_list_message[4096];
     timing_list_message[0] = 'T';
@@ -2868,7 +2868,7 @@ static void check_and_send_plist_metadata(plist_t messagePlist, const char *plis
 void handle_setup_2(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
   int err;
   debug(2, "Connection %d: SETUP (AirPlay 2)", conn->connection_number);
-  debug_log_rtsp_message(2, "SETUP (AirPlay 2) SETUP incoming message", req);
+  debug_log_rtsp_message(3, "SETUP (AirPlay 2) SETUP incoming message", req);
 
   plist_t messagePlist = plist_from_rtsp_content(req);
   plist_t setupResponsePlist = plist_new_dict();
@@ -2965,7 +2965,7 @@ void handle_setup_2(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp)
                 0) // it should be open already, but just in case it isn't...
               die("Can not access the NQPTP service. Has it stopped running?");
             // clear_ptp_clock();
-            debug_log_rtsp_message(2, "SETUP \"PTP\" message", req);
+            debug_log_rtsp_message(3, "SETUP \"PTP\" message", req);
             plist_t groupUUID = plist_dict_get_item(messagePlist, "groupUUID");
             if (groupUUID) {
               char *gid = NULL;
@@ -3451,7 +3451,7 @@ void handle_setup_2(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp)
   plist_free(messagePlist);
   if (clientNameString != NULL)
     free(clientNameString);
-  debug_log_rtsp_message(2, " SETUP response", resp);
+  debug_log_rtsp_message(3, " SETUP response", resp);
 }
 #endif
 
@@ -5219,7 +5219,7 @@ static void *rtsp_conversation_thread_func(void *pconn) {
 #endif
 
   while (conn->stop == 0) {
-    int debug_level = 2; // for printing the request and response
+    int debug_level = 3; // for printing the request and response
 
     // check to see if a conn has been zeroed
 
@@ -5302,7 +5302,7 @@ static void *rtsp_conversation_thread_func(void *pconn) {
               obfp += 2;
             };
             *obfp = 0;
-            debug(2, "Content: \"%s\".", obf);
+            debug(dl, "Content: \"%s\".", obf);
           }
         }
       }
@@ -5586,7 +5586,7 @@ void *rtsp_listen_loop(__attribute((unused)) void *arg) {
       pthread_cleanup_push(malloc_cleanup, conn);
       memset(conn, 0, sizeof(rtsp_conn_info));
       conn->connection_number = RTSP_connection_index++;
-      debug(2, "Connection %d is at: 0x%" PRIxPTR ".", conn->connection_number, conn);
+      // debug(2, "Connection %d is at: 0x%" PRIxPTR ".", conn->connection_number, conn);
 #ifdef CONFIG_AIRPLAY_2
       conn->airplay_type = ap_2;  // changed if an ANNOUNCE is received
       conn->timing_type = ts_ptp; // changed if an ANNOUNCE is received
