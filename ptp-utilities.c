@@ -35,8 +35,10 @@
 #include <sys/mman.h>
 #ifdef COMPILE_FOR_FREEBSD
 #include <netinet/in.h>
-#include <sys/socket.h>
 #endif
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netdb.h>
 #define __STDC_FORMAT_MACROS
 #include "common.h"
 #include "ptp-utilities.h"
@@ -222,28 +224,38 @@ void ptp_send_control_message_string(const char *msg) {
              msg);
     debug(2, "Send control message to NQPTP: \"%s\"", full_message);
     int s;
-    unsigned short port = htons(NQPTP_CONTROL_PORT);
-    struct sockaddr_in server;
+    int ret;
+    struct addrinfo hints, *info;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    /* nqptp is only controllable via localhost */
+    char portstr[20];
+    snprintf(portstr, 20, "%d", NQPTP_CONTROL_PORT);
+
+    ret = getaddrinfo("localhost", portstr, &hints, &info);
+    if (ret) {
+      die("getaddrinfo: %s", gai_strerror(ret));
+    }
 
     /* Create a datagram socket in the internet domain and use the
      * default protocol (UDP).
      */
-    if ((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+    if ((s = socket(info->ai_family, info->ai_socktype, 0)) < 0) {
       die("Can't open a socket to NQPTP");
     }
 
-    /* Set up the server name */
-    server.sin_family = AF_INET; /* Internet Domain    */
-    server.sin_port = port;      /* Server Port        */
-    server.sin_addr.s_addr = 0;  /* Server's Address   */
-
     /* Send the message in buf to the server */
-    if (sendto(s, full_message, full_message_size, 0, (struct sockaddr *)&server, sizeof(server)) <
+    if (sendto(s, full_message, full_message_size, 0, info->ai_addr, info->ai_addrlen) <
         0) {
       die("error sending timing_peer_list to NQPTP");
     }
     /* Deallocate the socket */
     close(s);
+    freeaddrinfo(info);
 
     /* deallocate the message string */
     free(full_message);

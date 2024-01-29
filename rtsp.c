@@ -5623,6 +5623,7 @@ void *rtsp_listen_loop(__attribute((unused)) void *arg) {
 #define KEEP_ALIVE_OR_IDLE_OPTION TCP_KEEPIDLE
 #endif
 
+#ifndef COMPILE_FOR_OPENBSD
           if (setsockopt(conn->fd, SOL_OPTION, KEEP_ALIVE_OR_IDLE_OPTION,
                          (void *)&keepAliveIdleTime, sizeof(keepAliveIdleTime))) {
             debug(1, "can't set the keepidle wait time");
@@ -5636,6 +5637,7 @@ void *rtsp_listen_loop(__attribute((unused)) void *arg) {
                          sizeof(keepAliveInterval))) {
             debug(1, "can't set the keepidle missing count interval");
           };
+#endif
 
           // initialise the connection info
           void *client_addr = NULL, *self_addr = NULL;

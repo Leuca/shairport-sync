@@ -1,3 +1,18 @@
+Version 4.3.3-dev-14-gf37d1b8e
+===
+***Pesky Changes You Can't Ignore***
+
+* The `man` entry for Shairport Sync has moved from Section 7 ("Miscellaneous information") to Section 1 ("General commands (tools and utilities)").
+  For this reason, yoou should delete the file `/usr/local/share/man/man7/shairport-sync.7` if it exists.
+  FYI, the `man` entry will now be placed at `/usr/local/share/man/man1/shairport-sync.1` at the `make install` step.
+  Thanks to [Klemens Nanni](https://github.com/klemensn) for noticing this and for providing [PR 1795](https://github.com/mikebrady/shairport-sync/pull/1795) to deal with it.
+
+**Bug Fixes**
+* A number of OpenBSD-specific issues have been discovered and fixed by [Klemens Nanni](https://github.com/klemensn). Thanks to them for [PR 1794](https://github.com/mikebrady/shairport-sync/pull/1794) and [PR 1793](https://github.com/mikebrady/shairport-sync/pull/1793).
+
+**Enhancement**
+* Add a separate `install-config-files` Makefile target to selectively enable or disable the installation of configuration files at `make install`. Thanks to [Zane van Iperen](https://github.com/vs49688) for [PR 1782](https://github.com/mikebrady/shairport-sync/pull/1782).
+
 Version 4.3.3-dev-4-g7e741465
 ===
 * A slight change to [CAR INSTALL](https://github.com/mikebrady/shairport-sync/blob/development/CAR%20INSTALL.md), to add a two-second delay when accessing the WiFi device for the first time. It may be necessary in some cases, e.g. the Pi 3B.

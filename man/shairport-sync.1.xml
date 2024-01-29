@@ -29,7 +29,7 @@
   OTHER DEALINGS IN THE SOFTWARE.
   -->
 
-  <manpage name="shairport-sync" section="7" desc="AirPlay and AirPlay 2 Audio Player">
+  <manpage name="shairport-sync" section="1" desc="AirPlay and AirPlay 2 Audio Player">
 
 	<synopsis>
 	<!--
