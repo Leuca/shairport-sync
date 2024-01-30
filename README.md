@@ -1,5 +1,5 @@
 # Shairport Sync
-Shairport Sync is an [AirPlay](https://www.pocket-lint.com/speakers/news/apple/144646-apple-airplay-2-vs-airplay-what-s-the-difference) audio player for Linux and FreeBSD. It plays audio streamed from Apple devices and from AirPlay sources such as [OwnTone](https://github.com/owntone/owntone-server) (formerly `forked-daapd`).
+Shairport Sync is an [AirPlay](https://www.pocket-lint.com/speakers/news/apple/144646-apple-airplay-2-vs-airplay-what-s-the-difference) audio player for Linux, FreeBSD and OpenBSD. It plays audio streamed from Apple devices and from AirPlay sources such as [OwnTone](https://github.com/owntone/owntone-server) (formerly `forked-daapd`).
 
 Shairport Sync can be built as an AirPlay 2 player (with [some limitations](AIRPLAY2.md#features-and-limitations)) or as "classic" Shairport Sync – a player for the older, but still supported, AirPlay (aka "AirPlay 1") protocol.
 
@@ -33,7 +33,7 @@ Some features require configuration at build time – see [CONFIGURATION FLAGS.m
 # Status
 Shairport Sync was designed to [run best](ADVANCED%20TOPICS/GetTheBest.md) on stable, dedicated, stand-alone low-power "headless" systems with ALSA as the audio system and with a decent CD-quality Digital to Analog Converter (DAC).
 
-Shairport Sync runs on recent (2018 onwards) Linux systems and FreeBSD from 12.1 onwards. It requires a system with the power of a Raspberry Pi 2 or a Pi Zero 2 or better.
+Shairport Sync runs on recent (2018 onwards) Linux systems, FreeBSD from 12.1 onwards and OpenBSD. It requires a system with the power of a Raspberry Pi 2 or a Pi Zero 2 or better.
 
 Classic Shairport Sync runs on a wider variety of Linux sytems, including OpenWrt and Cygwin and it also runs on OpenBSD. Many embedded devices are powerful enough to power classic Shairport Sync.
 
@@ -57,7 +57,7 @@ Thanks to everyone who has supported and improved Shairport Sync over the years.
 The audio that Shairport Sync receives is sent to the computer's sound system, to a named unix pipe or to `STDOUT`. By far the best sound system to use is ALSA. This is because ALSA can give direct access to the Digital to Analog Converter (DAC) hardware of the machine. Audio samples can be sent through ALSA directly to the DAC, maximising fidelity, and accurate timing information can be obtained from the DAC, maximising synchronisation. Direct access to hardware is given through ALSA devices with names beginning with `hw:`. 
 
 ## Synchronised Audio
-Shairport Sync offers *full audio synchronisation*. Full audio synchronisation means that audio is played on the output device at exactly the time specified by the audio source. To accomplish this, Shairport Sync needs access to audio systems – such as ALSA on Linux and `sndio` on FreeBSD – that provide very accurate timing information about audio being streamed to output devices. Ideally, Shairport Sync should have direct access to the output device used, which should be a real sound card capable of working with 44,100, 88,200 or 176,400 samples per second, interleaved PCM stereo of 8, 16, 24 or 32 bits. Using the ALSA sound system, Shairport Sync will choose the greatest bit depth available at 44,100 samples per second, resorting to multiples of 44,100 if it is not available. You'll get a message in the log if there's a problem. With all other sound systems, a sample rate of 44,100 is chosen with a bit depth of 16 bit.
+Shairport Sync offers *full audio synchronisation*. Full audio synchronisation means that audio is played on the output device at exactly the time specified by the audio source. To accomplish this, Shairport Sync needs access to audio systems – such as ALSA on Linux and `sndio` on FreeBSD and OpenBSD – that provide very accurate timing information about audio being streamed to output devices. Ideally, Shairport Sync should have direct access to the output device used, which should be a real sound card capable of working with 44,100, 88,200 or 176,400 samples per second, interleaved PCM stereo of 8, 16, 24 or 32 bits. Using the ALSA sound system, Shairport Sync will choose the greatest bit depth available at 44,100 samples per second, resorting to multiples of 44,100 if it is not available. You'll get a message in the log if there's a problem. With all other sound systems, a sample rate of 44,100 is chosen with a bit depth of 16 bit.
 
 Shairport Sync works well with PulseAudio, a widely used sound server found on many desktop Linuxes. While the timing information is not as accurate as that of ALSA or `sndio`, it is often impractical to remove or disable PulseAudio. 
 

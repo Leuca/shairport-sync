@@ -1,9 +1,20 @@
+Version 4.3.3-dev-21-g926cd56e
+===
+
+**Enhancements**
+* Updates to documentation regarding OpenBSD -- [PR 1797](https://github.com/mikebrady/shairport-sync/pull/1797).
+
+**Bug Fixes**
+* Fix an OpenBSD compilation warning -- [PR 1797](https://github.com/mikebrady/shairport-sync/pull/1797).
+* Terminate Shairport Sync if the configuration file exists but can not be opened -- [PR 1798](https://github.com/mikebrady/shairport-sync/pull/1798).
+  
+Thanks to [Klemens Nanni](https://github.com/klemensn) for these PRs.
+
 Version 4.3.3-dev-14-gf37d1b8e
 ===
 ***Pesky Changes You Can't Ignore***
-
 * The `man` entry for Shairport Sync has moved from Section 7 ("Miscellaneous information") to Section 1 ("General commands (tools and utilities)").
-  For this reason, yoou should delete the file `/usr/local/share/man/man7/shairport-sync.7` if it exists.
+  For this reason, you should delete the file `/usr/local/share/man/man7/shairport-sync.7` if it exists.
   FYI, the `man` entry will now be placed at `/usr/local/share/man/man1/shairport-sync.1` at the `make install` step.
   Thanks to [Klemens Nanni](https://github.com/klemensn) for noticing this and for providing [PR 1795](https://github.com/mikebrady/shairport-sync/pull/1795) to deal with it.
 

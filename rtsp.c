@@ -5601,7 +5601,7 @@ void *rtsp_listen_loop(__attribute((unused)) void *arg) {
       } else {
         size_of_reply = sizeof(SOCKADDR);
         if (getsockname(conn->fd, (struct sockaddr *)&conn->local, &size_of_reply) == 0) {
-
+#ifndef COMPILE_FOR_OPENBSD
           // Thanks to https://holmeshe.me/network-essentials-setsockopt-SO_KEEPALIVE/ for this.
 
           // turn on keepalive stuff -- wait for keepidle + (keepcnt * keepinttvl time) seconds
@@ -5623,7 +5623,6 @@ void *rtsp_listen_loop(__attribute((unused)) void *arg) {
 #define KEEP_ALIVE_OR_IDLE_OPTION TCP_KEEPIDLE
 #endif
 
-#ifndef COMPILE_FOR_OPENBSD
           if (setsockopt(conn->fd, SOL_OPTION, KEEP_ALIVE_OR_IDLE_OPTION,
                          (void *)&keepAliveIdleTime, sizeof(keepAliveIdleTime))) {
             debug(1, "can't set the keepidle wait time");
