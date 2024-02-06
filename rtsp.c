@@ -5694,7 +5694,7 @@ void *rtsp_listen_loop(__attribute((unused)) void *arg) {
     } while (1);
     pthread_cleanup_pop(1); // should never happen
   } else {
-    warn("could not establish a service on port %d -- program terminating. Is another instance of "
+    die("could not establish a service on port %d -- program terminating. Is another instance of "
          "Shairport Sync running on this device?",
          config.port);
   }
