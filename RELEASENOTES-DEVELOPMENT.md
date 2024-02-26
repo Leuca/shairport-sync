@@ -1,3 +1,14 @@
+Version 4.3.3-dev-30-g4aee4ec8
+===
+**Enhancements**
+* Start using the `pledge(2)` facilities in OpenBSD. In OpenBSD, limit the set of system calls Shairport Sync is allowed to make, most importantly, permit `fork(2)`/`execve(2)` if and only if user defined commands are run. [PR 1803](https://github.com/mikebrady/shairport-sync/pull/1803).
+
+**Bug Fixes**
+* Do not print the password in debug logs. [PR 1811](https://github.com/mikebrady/shairport-sync/pull/1811).
+* If a string argument is a NULL in some debug messages, output the string `(null)`. [PR 1810](https://github.com/mikebrady/shairport-sync/pull/1810).
+
+Thanks again to [Klemens Nanni](https://github.com/klemensn) for these PRs.
+
 Version 4.3.3-dev-21-g926cd56e
 ===
 
