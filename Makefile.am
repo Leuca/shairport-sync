@@ -34,6 +34,7 @@ if BUILD_FOR_OPENBSD
 else
   AM_CXXFLAGS = -fno-common -Wno-multichar -Wall -Wextra -Wno-clobbered -Wno-psabi -pthread -DSYSCONFDIR=\"$(sysconfdir)\"
   AM_CFLAGS = -fno-common -Wno-multichar -Wall -Wextra -Wno-clobbered -Wno-psabi -pthread -DSYSCONFDIR=\"$(sysconfdir)\"
+  shairport_sync_SOURCES += scripts/shairport-sync.service scripts/shairport-sync.service-avahi scripts/shairport-sync
 endif
 endif
 endif

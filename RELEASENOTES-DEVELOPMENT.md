@@ -1,3 +1,8 @@
+Version 4.3.3-dev-32-gcf10ff9d
+===
+**Enhancement**
+* Implements the idea in [Issue 1808](https://github.com/mikebrady/shairport-sync/issues/1808). Thanks to [Bill Peck](https://github.com/p3ck) for the suggestion and continued support for Fedora.
+
 Version 4.3.3-dev-30-g4aee4ec8
 ===
 **Enhancements**
