@@ -115,6 +115,11 @@ if  test "x$with_external_mdns" = xyes ; then
 fi
 AM_CONDITIONAL([USE_EXTERNAL_MDNS], [test "x$with_external_mdns" = "xyes" ])
 
+# Check if we want to create user/group (default to yes):
+
+AC_ARG_WITH([create-user-group],[AS_HELP_STRING([--with-create-user-group],[create user/group during a make install])], ,[with_with_create_user_group=yes])
+AM_CONDITIONAL([INSTALL_CREATE_USER_GROUP], [test "x$with_with_create_user_group" = "xyes"])
+
 # Add the libconfig package
 if  test "x${with_pkg_config}" = xyes ; then
   PKG_CHECK_MODULES(

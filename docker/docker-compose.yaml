@@ -6,10 +6,11 @@ services:
     network_mode: host
     restart: unless-stopped
     # environment:
+    #  S6_KEEP_ENV: 1 # Allow S6 to pass environment variables from compose file
     #  PULSE_SERVER: unix:/tmp/pulseaudio.socket # Path for PulseAudio socket
     #  PULSE_COOKIE: /tmp/pulseaudio.cookie # Path for PulseAudio cookie
     devices:
-      - "/dev/snd" # ALSA device
+      - "/dev/snd" # ALSA device, omit if using PulseAudio
     # volumes:
     #   - ./volumes/shairport-sync/shairport-sync.conf:/etc/shairport-sync.conf # Customised Shairport Sync configuration file.
     #   - /run/user/1000/pulse/native:/tmp/pulseaudio.socket # PulseAudio socket when using that backend
