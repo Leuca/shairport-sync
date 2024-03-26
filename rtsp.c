@@ -1688,6 +1688,47 @@ void handle_get_info(__attribute((unused)) rtsp_conn_info *conn, rtsp_message *r
               hdr);
       }
     }
+    
+    // In Stage 1, look for the DACP and Active-Remote
+    char *ar = msg_get_header(req, "Active-Remote");
+    if (ar) {
+      debug(3, "Connection %d: GET /info -- Active-Remote string seen: \"%s\".",
+            conn->connection_number, ar);
+      // get the active remote
+      if (conn->dacp_active_remote) // this is in case SETUP was previously called
+        free(conn->dacp_active_remote);
+      conn->dacp_active_remote = strdup(ar);
+#ifdef CONFIG_METADATA
+      send_metadata('ssnc', 'acre', ar, strlen(ar), req, 1);
+#endif
+    } else {
+      debug(3, "Connection %d: GET /info -- doesn't include  Active-Remote information.",
+            conn->connection_number);
+      if (conn->dacp_active_remote) { // this is in case GET /info was previously called
+        free(conn->dacp_active_remote);
+        conn->dacp_active_remote = NULL;
+      }
+    }
+
+    ar = msg_get_header(req, "DACP-ID");
+    if (ar) {
+      debug(3, "Connection %d: GET /info -- DACP-ID string seen: \"%s\".", conn->connection_number,
+            ar);
+      if (conn->dacp_id) // this is in case SETUP was previously called
+        free(conn->dacp_id);
+      conn->dacp_id = strdup(ar);
+#ifdef CONFIG_METADATA
+      send_metadata('ssnc', 'daid', ar, strlen(ar), req, 1);
+#endif
+    } else {
+      debug(3, "Connection %d: GET /info -- doesn't include DACP-ID string information.",
+            conn->connection_number);
+      if (conn->dacp_id) { // this is in case GET /info was previously called
+        free(conn->dacp_id);
+        conn->dacp_id = NULL;
+      }
+    }
+
     plist_t info_plist = NULL;
     plist_from_memory(req->content, req->contentlength, &info_plist);
 
