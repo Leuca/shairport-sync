@@ -1,7 +1,43 @@
+Version 4.3.3-dev-46-g6eba4fd8
+===
+**Enhancement**
+* This enhancement modifies the AirPlay attributes advertised by Shairport Sync to allow AirPlay clients to see only the player of the appropriate protocol -- Classic Airplay ("AirPlay 1") or AirPlay 2.
+
+  For example, if you run two instances of Shairport Sync, one built for Classic Airplay and the other for AirPlay 2, MacOS and iOS will recognize only the AirPlay 2 instance.
+
+  Without the enhancment, MacOS and iOS will detect both Classic AirPlay and AirPlay 2 devices at the same time. (TuneBlade recognised only the Classic Airplay device, since it is not compatible with AirPlay 2.)
+
+  Thanks to [Oleh Kuzhylnyi](https://github.com/kuzhylol) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1831).
+
+Version 4.3.3-dev-43-g5922f9d1
+===
+**Enhancement**
+* If a network interface is specified in the configuration file, limit the addresses used for PTP to to that network interface only. Thanks to [Ryan Mounce](https://github.com/rmounce) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1813).
+
+Version 4.3.3-dev-41-g0f07107c
+===
+**Enhancment**
+* Look for `DACP-ID` and `Active-Remote` in the `GET /info` request, where it sometimes appears in an AirPlay 2 session originating from an Intel Mac.
+
+Version 4.3.3-dev-40-g98627932
+===
+**Enhancement**
+* Add a configuration option `--without-create-user-group` to optionally disable the creation of the `shairport-sync` user and group during a `make install`. This makes packaging easier for some systems, e.g. Yocto. Thanks to [hvilleneuve29](https://github.com/hvilleneuve29) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1820).
+
+Version 4.3.3-dev-38-gab59f201
+===
+**Docker Compose Enhancement**
+* Set `S6_KEEP_ENV = 1` to enable the passing of environment variables from the docker compose file into the image. Thanks to [HNKNTA](https://github.com/HNKNTA) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1812).
+
+Version 4.3.3-dev-35-gd6ad6da1
+===
+**Documentation Update**
+* The introduction paragraph now more clearly mentions the hard facts/requirements with "as of v4.1 and newer" and the supported devices are displayed in bullet list format for better readabilty. Thanks to [porg](https://github.com/porg) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1818).
+
 Version 4.3.3-dev-32-gcf10ff9d
 ===
 **Enhancement**
-* Implements the idea in [Issue 1808](https://github.com/mikebrady/shairport-sync/issues/1808). Thanks to [Bill Peck](https://github.com/p3ck) for the suggestion and continued support for Fedora.
+* Implements the idea in [Issue 1808](https://github.com/mikebrady/shairport-sync/issues/1808) to make Fedora package-building easier. Thanks to [Bill Peck](https://github.com/p3ck) for the suggestion and continued support for Fedora.
 
 Version 4.3.3-dev-30-g4aee4ec8
 ===
