@@ -1,3 +1,8 @@
+Version 4.3.3-dev-49-gb5ea2b10
+===
+**MQTT Documentation Updates**
+* Thanks to [Craig Lockwood](https://github.com/1ockwood) for [improvements](https://github.com/mikebrady/shairport-sync/pull/1838) to the [MQTT](MQTT.md) document. The `binary_sensor` example has been updated and the rest of the document has been edited for clarity, length and consistency. 
+
 Version 4.3.3-dev-46-g6eba4fd8
 ===
 **Enhancement**
@@ -5,14 +10,14 @@ Version 4.3.3-dev-46-g6eba4fd8
 
   For example, if you run two instances of Shairport Sync, one built for Classic Airplay and the other for AirPlay 2, MacOS and iOS will recognize only the AirPlay 2 instance.
 
-  Without the enhancment, MacOS and iOS will detect both Classic AirPlay and AirPlay 2 devices at the same time. (TuneBlade recognised only the Classic Airplay device, since it is not compatible with AirPlay 2.)
+  Without the enhancement, MacOS and iOS will detect both Classic AirPlay and AirPlay 2 devices at the same time. (TuneBlade recognised only the Classic Airplay device, since it is not compatible with AirPlay 2.)
 
   Thanks to [Oleh Kuzhylnyi](https://github.com/kuzhylol) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1831).
 
 Version 4.3.3-dev-43-g5922f9d1
 ===
 **Enhancement**
-* If a network interface is specified in the configuration file, limit the addresses used for PTP to to that network interface only. Thanks to [Ryan Mounce](https://github.com/rmounce) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1813).
+* If a network interface is specified in the configuration file, limit the addresses used for PTP to that network interface only. Thanks to [Ryan Mounce](https://github.com/rmounce) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1813).
 
 Version 4.3.3-dev-41-g0f07107c
 ===
