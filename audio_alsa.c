@@ -938,9 +938,9 @@ static int prepare_mixer() {
         } else {
           // use the linear scale and do the db conversion ourselves
           warn("The hardware mixer specified -- \"%s\" -- does not have "
-               "a dB volume scale.",
+               "a dB volume scale, and so can not be used by Shairport Sync.",
                alsa_mix_ctrl);
-
+          /*
           if ((response = snd_ctl_open(&ctl, alsa_mix_dev, 0)) < 0) {
             warn("Cannot open control \"%s\"", alsa_mix_dev);
           }
@@ -961,9 +961,10 @@ static int prepare_mixer() {
                                                    // we know it can do dB stuff
               audio_alsa.parameters = &parameters; // likewise the parameters stuff
             } else {
-              debug(1, "Cannot get the dB range from the volume control \"%s\"", alsa_mix_ctrl);
+              debug(1, "Cannot get a dB range from the volume control \"%s\"", alsa_mix_ctrl);
             }
           }
+          */
         }
       }
       if (((config.alsa_use_hardware_mute == 1) &&
