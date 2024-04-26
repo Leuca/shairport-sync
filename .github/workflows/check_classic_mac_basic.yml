@@ -17,7 +17,6 @@ jobs:
     - name: Install Dependencies
       run: |
         brew install automake
-        brew install openssl
         brew install popt
         brew install libconfig
         brew install libao

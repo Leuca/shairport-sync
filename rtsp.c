@@ -951,7 +951,7 @@ void add_flush_request(int flushNow, uint32_t flushFromSeq, uint32_t flushFromTS
     if ((u == NULL) || ((u->flushNow == 0) && (flushNow != 0)) ||
         (flushFromSeq < u->flushFromSeq) ||
         ((flushFromSeq == u->flushFromSeq) && (flushFromTS < u->flushFromTS))) {
-      flush_request_t *n = (flush_request_t *)calloc(sizeof(flush_request_t), 1);
+      flush_request_t *n = (flush_request_t *)calloc(1, sizeof(flush_request_t));
       n->flushNow = flushNow;
       n->flushFromSeq = flushFromSeq;
       n->flushFromTS = flushFromTS;
