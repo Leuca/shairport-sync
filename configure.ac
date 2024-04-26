@@ -68,8 +68,7 @@ AC_CHECK_LIB([m],[exp], , AC_MSG_ERROR(maths library needed))
 if  test "x${with_pkg_config}" = xyes ; then
   PKG_CHECK_MODULES(
       [popt], [popt],
-      [CFLAGS="${popt_CFLAGS} ${CFLAGS}"
-      LIBS="${popt_LIBS} ${LIBS}"], AC_MSG_ERROR(libpopt needed))
+      [CFLAGS="${popt_CFLAGS} ${CFLAGS}" LIBS="${popt_LIBS} ${LIBS}"], AC_MSG_ERROR(libpopt needed))
 else
   AC_CHECK_LIB([popt],[poptGetContext], , AC_MSG_ERROR(libpopt needed))
 fi
@@ -124,7 +123,7 @@ AM_CONDITIONAL([INSTALL_CREATE_USER_GROUP], [test "x$with_with_create_user_group
 if  test "x${with_pkg_config}" = xyes ; then
   PKG_CHECK_MODULES(
       [libconfig], [libconfig],
-      [LIBS="${libconfig_LIBS} ${LIBS}"], AC_MSG_ERROR([libconfig library needed]))
+      [CFLAGS="${libconfig_CFLAGS} ${CFLAGS}" LIBS="${libconfig_LIBS} ${LIBS}"], AC_MSG_ERROR([libconfig library needed]))
 else
   AC_CHECK_LIB([config],[config_init], , AC_MSG_ERROR([libconfig library needed]))
 fi
@@ -181,7 +180,7 @@ if test "x${with_ssl}" = xopenssl ; then
 	if  test "x${with_pkg_config}" = xyes ; then
 	  PKG_CHECK_MODULES(
 	      [SSL], [libssl,libcrypto],
-	      [LIBS="${SSL_LIBS} ${LIBS}"])
+	      [CFLAGS="${SSL_CFLAGS} ${CFLAGS}" LIBS="${SSL_LIBS} ${LIBS}"])
 	else
 	  AC_CHECK_LIB([crypto], [main], , AC_MSG_ERROR(libcrypto selected but the library cannot be found!))
 	  AC_CHECK_LIB([ssl], [main], , AC_MSG_ERROR(libssl selected but the library cannot be found!))
@@ -288,7 +287,13 @@ AM_CONDITIONAL([USE_SNDIO], [test "x$with_sndio" = "xyes"])
 AC_ARG_WITH(ao, [AS_HELP_STRING([--with-ao],[choose AO (Audio Output?) API support. N.B. no synchronisation -- so underflow or overflow is inevitable!])])
 if test "x$with_ao" = "xyes" ; then
   AC_DEFINE([CONFIG_AO], 1, [Include an AO-compatible  audio backend.])
-  AC_CHECK_LIB([ao], [ao_initialize], , AC_MSG_ERROR(AO support requires the ao library -- libao-dev suggested))
+  if  test "x${with_pkg_config}" = xyes ; then
+    PKG_CHECK_MODULES(
+        [AO], [ao > 1.0.0],
+        [CFLAGS="${AO_CFLAGS} ${CFLAGS}" LIBS="${AO_LIBS} ${LIBS}"], [AC_MSG_ERROR(AO support requires the ao library -- libao-dev suggested)])
+  else
+    AC_CHECK_LIB([ao], [ao_initialize], , AC_MSG_ERROR(AO support requires the ao library -- libao-dev suggested))
+  fi
 fi
 AM_CONDITIONAL([USE_AO], [test "x$with_ao" = "xyes"])
 

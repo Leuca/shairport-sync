@@ -1,3 +1,19 @@
+Version 4.3.3-dev-66-gb054c004
+==
+**Enhancement**
+* Simplify the macOS build check.
+* Add some extra `CFLAG` settings to `configure.ac` for `libconfig`, `libpopt`, `openssl` and `libcrypto` to enable compilation on macOS without extra flag settings.
+  
+Version 4.3.3-dev-61-gcc963bf0
+==
+**Enhancement**
+* Use `macos-13` instead of `macos-latest` as the `github` runner for the Mac-compatible build check.
+  
+Version 4.3.3-dev-58-g85f8ea12
+==
+**Enhancement**
+* Use `PKG_CHECK_MODULES`, if it's available, to find the `ao` lib. 
+
 Version 4.3.3-dev-53-gc0f5112b
 ===
 **Bug Fix**
