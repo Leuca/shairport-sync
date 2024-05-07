@@ -49,11 +49,11 @@ If you are building classic Shairport Sync, the list of packages is shorter:
 # apt-get install --no-install-recommends build-essential git autoconf automake libtool \
     libpopt-dev libconfig-dev libasound2-dev avahi-daemon libavahi-client-dev libssl-dev libsoxr-dev
 ```
-### Fedora
-For AirPlay 2 operation, _before you install the libraries_, please ensure the you have [enabled](https://docs.fedoraproject.org/en-US/quick-docs/setup_rpmfusion) RPM Fusion software repositories at least to the "Free" level. If this is not done, FFmpeg libraries will be installed that lack a suitable AAC decoder, preventing Shairport Sync from working in AirPlay 2 mode.
+### Fedora (Fedora 40)
+For AirPlay 2 operation, _before you install the libraries_, please ensure the you have [enabled](https://docs.fedoraproject.org/en-US/quick-docs/rpmfusion-setup) RPM Fusion software repositories to the "Nonfree" level. If this is not done, the FFmpeg libraries will lack a suitable AAC decoder, preventing Shairport Sync from working in AirPlay 2 mode. 
 ```
 # yum update
-# yum install make automake gcc gcc-c++ \
+# yum install --allowerasing make automake gcc gcc-c++ \
     git autoconf automake avahi-devel libconfig-devel openssl-devel popt-devel soxr-devel \
     ffmpeg ffmpeg-devel libplist-devel libsodium-devel libgcrypt-devel libuuid-devel vim-common \
     alsa-lib-devel
