@@ -9,8 +9,6 @@ License:        MIT and BSD and GPLv3+ and ISC
 URL:            https://github.com/mikebrady/shairport-sync
 Source:         {{{ git_dir_pack }}}
 
-Patch0:         copr.patch
-
 BuildRequires:  make
 BuildRequires:  automake
 BuildRequires:  gcc
@@ -52,11 +50,10 @@ This version of Shairport Sync has been built from the development branch
 
 %prep
 {{{ git_dir_setup_macro }}}
-%patch0 -p1
 
 %build
 autoreconf -i -f
-%configure --with-avahi --with-systemd --with-alsa --with-pa --with-ssl=openssl --with-soxr --with-apple-alac --with-airplay-2
+%configure --with-avahi --with-systemd --with-alsa --with-pa --with-ssl=openssl --with-soxr --with-apple-alac --with-airplay-2 --without-create-user-group
 %make_build
 
 %install
