@@ -31,9 +31,9 @@ BuildRequires:  alsa-lib-devel
 BuildRequires:  pulseaudio-libs-devel
 BuildRequires:  systemd-rpm-macros
 # Allow build with both free and non-free versions
-BuildRequires:  %{_libdir}/libavformat.so
-BuildRequires:  %{_libdir}/libavutil.so
-BuildRequires:  %{_libdir}/libavcodec.so
+BuildRequires:  (libavformat-devel or libavformat-free-devel)
+BuildRequires:  (libavutil-devel or libavutil-free-devel)
+BuildRequires:  (libavcodec-devel or libavcodec-free-devel)
 
 Requires:       nqptp-unstable
 
