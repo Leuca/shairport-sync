@@ -100,6 +100,12 @@
 #include <mbedtls/md.h>
 #include <mbedtls/version.h>
 #include <mbedtls/x509.h>
+
+#if MBEDTLS_VERSION_MAJOR == 3
+#define MBEDTLS_PRIVATE_V3_ONLY(_q) MBEDTLS_PRIVATE(_q)
+#else
+#define MBEDTLS_PRIVATE_V3_ONLY(_q) _q
+#endif
 #endif
 
 #ifdef CONFIG_LIBDAEMON
@@ -910,8 +916,14 @@ uint8_t *rsa_apply(uint8_t *input, int inlen, int *outlen, int mode) {
 
   mbedtls_pk_init(&pkctx);
 
+#if MBEDTLS_VERSION_MAJOR == 3
   rc = mbedtls_pk_parse_key(&pkctx, (unsigned char *)super_secret_key, sizeof(super_secret_key),
+                            NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg);
+#else
+  rc = mbedtls_pk_parse_key(&pkctx, (unsigned char *)super_secret_key, sizeof(super_secret_key), 
                             NULL, 0);
+
+#endif
   if (rc != 0)
     debug(1, "Error %d reading the private key.", rc);
 
@@ -920,19 +932,29 @@ uint8_t *rsa_apply(uint8_t *input, int inlen, int *outlen, int mode) {
 
   switch (mode) {
   case RSA_MODE_AUTH:
-    mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V15, MBEDTLS_MD_NONE);
-    outbuf = malloc(trsa->len);
+    mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V15, MBEDTLS_MD_NONE);    
+    outbuf = malloc(trsa->MBEDTLS_PRIVATE_V3_ONLY(len));
+#if MBEDTLS_VERSION_MAJOR == 3
+    rc = mbedtls_rsa_pkcs1_encrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg,
+                                   inlen, input, outbuf);
+#else
     rc = mbedtls_rsa_pkcs1_encrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg, MBEDTLS_RSA_PRIVATE,
                                    inlen, input, outbuf);
+#endif
     if (rc != 0)
       debug(1, "mbedtls_pk_encrypt error %d.", rc);
-    *outlen = trsa->len;
+    *outlen = trsa->MBEDTLS_PRIVATE_V3_ONLY(len);
     break;
   case RSA_MODE_KEY:
     mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA1);
-    outbuf = malloc(trsa->len);
+    outbuf = malloc(trsa->MBEDTLS_PRIVATE_V3_ONLY(len));
+#if MBEDTLS_VERSION_MAJOR == 3
+    rc = mbedtls_rsa_pkcs1_decrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg,
+                                   &olen, input, outbuf, trsa->MBEDTLS_PRIVATE_V3_ONLY(len));
+#else
     rc = mbedtls_rsa_pkcs1_decrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg, MBEDTLS_RSA_PRIVATE,
                                    &olen, input, outbuf, trsa->len);
+#endif
     if (rc != 0)
       debug(1, "mbedtls_pk_decrypt error %d.", rc);
     *outlen = olen;

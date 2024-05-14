@@ -1,3 +1,9 @@
+Version 4.3.3-dev-73-g8d678c43
+==
+**Enhancement**
+* Add support for the `mdebtls3` library. (Note: `mdebtls3` is optional for Classic Airplay builds; it is not used in AirPlay 2 builds).
+  Many thanks to [orangepizza](https://github.com/orangepizza) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1846).
+  
 Version 4.3.3-dev-66-gb054c004
 ==
 **Enhancement**

@@ -48,7 +48,6 @@
 
 #ifdef CONFIG_MBEDTLS
 #include <mbedtls/aes.h>
-#include <mbedtls/havege.h>
 #endif
 
 #ifdef CONFIG_POLARSSL
