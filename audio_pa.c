@@ -41,7 +41,7 @@
 #define RATE 44100
 
 // Four seconds buffer -- should be plenty
-#define buffer_allocation 44100 * 4 * 2 * 2
+#define buffer_allocation RATE * 4 * 2 * 2
 
 static pthread_mutex_t buffer_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -399,7 +399,7 @@ void stream_write_cb(pa_stream *stream, size_t requested_bytes,
     ret = pa_stream_begin_write(stream, (void **)&buffer, &bytes_we_can_transfer);
     if ((ret == 0) && (buffer != NULL)) {
       if (bytes_we_can_transfer <= (size_t)(audio_umb - audio_toq)) {
-        // the bytes are all in a row in the audo buffer
+        // the bytes are all in a row in the audio buffer
         memcpy(buffer, audio_toq, bytes_we_can_transfer);
         audio_toq += bytes_we_can_transfer;
         ret = pa_stream_write(stream, buffer, bytes_we_can_transfer, NULL, 0LL, PA_SEEK_RELATIVE);

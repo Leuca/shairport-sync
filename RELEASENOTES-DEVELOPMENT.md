@@ -1,3 +1,8 @@
+Version 4.3.3-dev-79-gf8e8550e
+==
+**Enhancements**
+* A number of minor documentation updates. Thanks to [Ambrose Li](https://github.com/acli) for their [PR](https://github.com/mikebrady/shairport-sync/pull/1851).
+
 Version 4.3.3-dev-73-g8d678c43
 ==
 **Enhancement**
