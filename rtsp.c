@@ -271,7 +271,7 @@ void build_bonjour_strings(__attribute((unused)) rtsp_conn_info *conn) {
   snprintf(pkString, sizeof(pkString), "pk=");
   pkString_make(pkString + strlen("pk="), sizeof(pkString) - strlen("pk="),
                 config.airplay_device_id);
-
+  txt_records[entry_number++] = "cn=0,1";
   txt_records[entry_number++] = "da=true";
   txt_records[entry_number++] = "et=0,1";
   txt_records[entry_number++] = ap1_featuresString;
@@ -310,6 +310,7 @@ void build_bonjour_strings(__attribute((unused)) rtsp_conn_info *conn) {
   txt_records[entry_number++] = "sv=false";
   txt_records[entry_number++] = "et=0,1";
   txt_records[entry_number++] = "ek=1";
+  txt_records[entry_number++] = "cn=0,1";
   txt_records[entry_number++] = "ch=2";
   txt_records[entry_number++] = "txtvers=1";
   if (config.password == 0)

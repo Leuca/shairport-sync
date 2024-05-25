@@ -1,3 +1,8 @@
+Version 4.3.3-dev-81-ge0b13829
+==
+**Bug Fix**
+* Undo the changes made in Version 4.3.3-dev-46. Unfortunately, the changes in [PR 1831](https://github.com/mikebrady/shairport-sync/pull/1831) make the Classic Airplay build of Shairport Sync invisible to iOS 17.5 and iPadOS 17.5. Thanks to [poker335](https://github.com/poker335) for identifying the issue and suggesting the fix. 
+
 Version 4.3.3-dev-79-gf8e8550e
 ==
 **Enhancements**
