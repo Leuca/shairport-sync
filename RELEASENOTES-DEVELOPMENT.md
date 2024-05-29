@@ -1,3 +1,7 @@
+Version 4.3.4-dev-1-gc945f3a9
+==
+This is effectively release version 4.3.3 -- the starting point for 4.3.4.
+
 Version 4.3.3-dev-81-ge0b13829
 ==
 **Bug Fix**

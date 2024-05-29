@@ -200,7 +200,7 @@ fi
 exit 0 # normal exit here
 ```
 
-#### Disable Unused Services
+#### Disable Unused Services (Optional)
 These optional steps have been tested on a Raspberry Pi only -- they have not been tested on other systems.
 Some services are not necessary for this setup and can be disabled as follows:
 ```
@@ -208,11 +208,9 @@ Some services are not necessary for this setup and can be disabled as follows:
 # systemctl disable triggerhappy
 # systemctl disable dphys-swapfile
 ```
-#### Optional: Read-only mode – Raspberry Pi Specific
-This optional step is applicable to a Raspberry Pi only. Run `sudo raspi-config` and then choose `Performance Options` > `Overlay Filesystem` and choose to enable the overlay filesystem, and to set the boot partition to be write-protected. (The idea here is that this offers more protection against files being corrupted by the sudden removal of power.)
 
-### Final Steps
 
+#### Disable Unused Services (Mandatory)
 You now need to disable some services; that is, you need to stop them starting automatically on power-up. This is because they either interfere with the system's operation in WiFi Access Point mode, or because they won't work when the system isn't connected to the Internet. Only one of the `NetworkManager` and the `dhcpcd` service will be present in your system, but it's no harm to try to disable both.
 ```
 # systemctl disable dhcpcd
@@ -220,12 +218,18 @@ You now need to disable some services; that is, you need to stop them starting a
 # systemctl disable wpa_supplicant
 # systemctl disable systemd-timesyncd
 ```
-Lastly, note that the WiFi credentials you used initially to connect to your network (e.g. your home network) will have been stored in the system in plain text. This is convenient for when you want to reconnect to update (see later), but if you prefer to delete them, they will be in `/etc/wpa_supplicant/wpa_supplicant.conf`
+Lastly, note that the WiFi credentials you used initially to connect to your network (e.g. your home network) will have been stored in the system in plain text. This is convenient for when you want to reconnect to update (see later), but if you prefer to delete them, they will be in `/etc/wpa_supplicant/wpa_supplicant.conf`.
 
+#### Optional: Read-only mode – Raspberry Pi Specific
+This optional step is applicable to a Raspberry Pi only. Run `sudo raspi-config` and then choose `Performance Options` > `Overlay Filesystem` and choose to enable the overlay filesystem, and to set the boot partition to be write-protected. (The idea here is that this offers more protection against files being corrupted by the sudden removal of power.)
+
+### Final Step
 When you are finished, carefully power down the machine before unplugging it from power:
 ```
 # poweroff
 ```
+Note: doing a `reboot` here doesn't seem to work properly -- it really does seem necessary to power off.
+
 ### Ready
 Install the Raspberry Pi in your car. It should be powered from a source that is switched off when you leave the car, otherwise the slight current drain will eventually flatten the car's battery.
 
