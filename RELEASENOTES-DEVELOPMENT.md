@@ -1,3 +1,36 @@
+Version 4.3.4-dev-3-g238e4bbf
+==
+**Enhancement -- HDMI Ports**
+* If your device has HDMI ports, the Shairport Sync help command has previously listed them with a `hw:` prefix, e.g. `hw:vc4hdmi0`. Unfortunately, if you use a name like that as an `output_device` name for a HDMI device in Shairport Sync, the device may not be usable.
+  
+  But if you use the `hdmi:` prefix, e.g. `hdmi:vc4hdmi0`, it _may_ work: something capable of receiving audio must be connected to the HDMI port and it must be powered on _when your device boots up_.
+
+  The enhancement is to update the help text for the ALSA backend to denote HDMI devices using the `hdmi:` prefix rather than `hw:`. Now, for example, on a Raspberry Pi 4, the output is:
+  ```
+  Settings and options for the audio backend "alsa":
+    -d output-device    set the output device, default is "default".
+    -c mixer-control    set the mixer control name, default is to use no mixer.
+    -m mixer-device     set the mixer device, default is the output device.
+    -i mixer-index      set the mixer index, default is 0.
+    hardware output devices:
+      "hdmi:vc4hdmi0"
+      "hdmi:vc4hdmi1"
+  ```
+  Previously it was:
+  ```
+  Settings and options for the audio backend "alsa":
+    -d output-device    set the output device, default is "default".
+    -c mixer-control    set the mixer control name, default is to use no mixer.
+    -m mixer-device     set the mixer device, default is the output device.
+    -i mixer-index      set the mixer index, default is 0.
+    hardware output devices:
+      "hw:vc4hdmi0"
+      "hw:vc4hdmi1"
+  ```
+  ...which is technically correct but unfortunately not very useful.
+
+  Get more information about the hardware output devices using [sps-alsa-explore](https://github.com/mikebrady/sps-alsa-explore) (also available as a Docker image).
+  
 Version 4.3.4-dev-1-gc945f3a9
 ==
 This is effectively release version 4.3.3 -- the starting point for 4.3.4.

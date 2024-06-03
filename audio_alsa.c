@@ -279,16 +279,70 @@ uint64_t frames_sent_for_playing;
 // frames_sent_for_playing (which Shairport Sync might hold) would be invalid.
 int frames_sent_break_occurred;
 
+// if a device name ends in ",DEV=0", drop it. Then if it also begins with "CARD=", drop that too.
+static void simplify_and_printf_mutable_device_name(char *device_name) {
+  if (strstr(device_name, ",DEV=0") == device_name + strlen(device_name) - strlen(",DEV=0")) {
+    char *shortened_device_name = str_replace(device_name, ",DEV=0", "");
+    char *simplified_device_name = str_replace(shortened_device_name, "CARD=", "");
+    printf("      \"%s\"\n", simplified_device_name);
+    free(simplified_device_name);
+    free(shortened_device_name);
+  } else {
+    printf("      \"%s\"\n", device_name);
+  }
+}
+
 static void help(void) {
+
   printf("    -d output-device    set the output device, default is \"default\".\n"
          "    -c mixer-control    set the mixer control name, default is to use no mixer.\n"
          "    -m mixer-device     set the mixer device, default is the output device.\n"
          "    -i mixer-index      set the mixer index, default is 0.\n");
-  int r = system("if [ -d /proc/asound ] ; then echo \"    hardware output devices:\" ; ls -al "
-                 "/proc/asound/ 2>/dev/null | grep '\\->' | tr -s ' ' | cut -d ' ' -f 9 | while "
-                 "read line; do echo \"      \\\"hw:$line\\\"\" ; done ; fi");
-  if (r != 0)
-    debug(2, "error %d executing a script to list alsa hardware device names", r);
+  // look for devices with a name prefix of hw: or hdmi:
+  int card_number = -1;
+  snd_card_next(&card_number);
+
+  if (card_number < 0) {
+    printf("      no hardware output devices found.\n");
+  }
+
+  int at_least_one_device_found = 0;
+  while (card_number >= 0) {
+    void **hints;
+    char *hdmi_str = NULL;
+    char *hw_str = NULL;
+    if (snd_device_name_hint(card_number, "pcm", &hints) == 0) {
+      void **device_on_card_hints = hints;
+      while (*device_on_card_hints != NULL) {
+        char *device_on_card_name = snd_device_name_get_hint(*device_on_card_hints, "NAME");
+        if ((strstr(device_on_card_name, "hw:") == device_on_card_name) && (hw_str == NULL))
+          hw_str = strdup(device_on_card_name);
+        if ((strstr(device_on_card_name, "hdmi:") == device_on_card_name) && (hdmi_str == NULL))
+          hdmi_str = strdup(device_on_card_name);
+        free(device_on_card_name);
+        device_on_card_hints++;
+      }
+      snd_device_name_free_hint(hints);
+      if ((hdmi_str != NULL) || (hw_str != NULL)) {
+        if (at_least_one_device_found == 0) {
+          printf("    hardware output devices:\n");
+          at_least_one_device_found = 1;
+        }
+      }
+      if (hdmi_str != NULL) {
+        simplify_and_printf_mutable_device_name(hdmi_str);
+      } else if (hw_str != NULL) {
+        simplify_and_printf_mutable_device_name(hw_str);
+      }
+      if (hdmi_str != NULL)
+        free(hdmi_str);
+      if (hw_str != NULL)
+        free(hw_str);
+    }
+    snd_card_next(&card_number);
+  }
+  if (at_least_one_device_found == 0)
+    printf("    no hardware output devices found.\n");
 }
 
 void set_alsa_out_dev(char *dev) { alsa_out_dev = dev; } // ugh -- not static!
