@@ -1,7 +1,7 @@
 /*
  * libalsa output driver. This file is part of Shairport.
  * Copyright (c) Muffinman, Skaman 2013
- * Copyright (c) Mike Brady 2014 -- 2022
+ * Copyright (c) Mike Brady 2014 -- 2024
  * All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -146,6 +146,7 @@ long alsa_mix_minv, alsa_mix_maxv;
 long alsa_mix_mindb, alsa_mix_maxdb;
 
 char *alsa_out_dev = "default";
+char *hw_alsa_out_dev = NULL;
 char *alsa_mix_dev = NULL;
 char *alsa_mix_ctrl = NULL;
 int alsa_mix_index = 0;
@@ -345,7 +346,12 @@ static void help(void) {
     printf("    no hardware output devices found.\n");
 }
 
-void set_alsa_out_dev(char *dev) { alsa_out_dev = dev; } // ugh -- not static!
+void set_alsa_out_dev(char *dev) {
+  alsa_out_dev = dev;
+  if (hw_alsa_out_dev != NULL)
+    free(hw_alsa_out_dev);
+  hw_alsa_out_dev = str_replace(alsa_out_dev, "hdmi:", "hw:");
+} // ugh -- not static!
 
 // assuming pthread cancellation is disabled
 // returns zero of all is okay, a Unx error code if there's a problem
@@ -956,7 +962,7 @@ static int prepare_mixer() {
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldState); // make this un-cancellable
 
     if (alsa_mix_dev == NULL)
-      alsa_mix_dev = alsa_out_dev;
+      alsa_mix_dev = hw_alsa_out_dev;
 
     // Now, start trying to initialise the alsa device with the settings
     // obtained
@@ -1409,11 +1415,19 @@ static int init(int argc, char **argv) {
   }
 
   debug(1, "alsa: output device name is \"%s\".", alsa_out_dev);
-
+  
+  
+  // now, we need a version of the alsa_out_dev that substitutes "hw:" for "hdmi" if it's
+  // there. It seems hw:1 would be a valid devcie name where hdmi:1 would not
+  
+  if (alsa_out_dev != NULL)
+    hw_alsa_out_dev = str_replace(alsa_out_dev, "hdmi:", "hw:");
+  
   // so, now, if the option to keep the DAC running has been selected, start a
   // thread to monitor the
   // length of the queue
   // if the queue gets too short, stuff it with silence
+  
 
   pthread_create(&alsa_buffer_monitor_thread, NULL, &alsa_buffer_monitor_thread_code, NULL);
 
@@ -1430,6 +1444,8 @@ static void deinit(void) {
   debug(3, "Join buffer monitor thread.");
   pthread_join(alsa_buffer_monitor_thread, NULL);
   pthread_setcancelstate(oldState, NULL);
+  if (hw_alsa_out_dev != NULL)
+    free(hw_alsa_out_dev);
 }
 
 static int set_mute_state() {

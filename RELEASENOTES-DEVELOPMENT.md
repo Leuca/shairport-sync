@@ -1,3 +1,8 @@
+Version 4.3.4-dev-6-g5f64722a
+==
+**Enhancement -- HDMI Ports**
+* As a further enhancement for HDMI, enable access to mixers on a HDMI output device. The issue appears to be that a mixer can not be "attached" to a device whose name begins with `hdmi:`, so it must be attached to the same device, but with the `hdmi:` prefix replaced by `hw:`.
+  
 Version 4.3.4-dev-3-g238e4bbf
 ==
 **Enhancement -- HDMI Ports**
