@@ -1,3 +1,14 @@
+Version 4.3.4-dev-10-gaade1b39
+==
+**Docker Enhancement -- Continued**
+* Move the `ulimit -n ...` command to set the maximum file limit from the `01-startup/script.sh` (where it didn't seem to have any effect) to the `02-dbus/run`. Thanks to [rp86](https://github.com/rp86) for the feedback.
+
+Version 4.3.4-dev-8-g111e247b
+==
+**Docker Enhancement**
+* Limit maximum open file handles in Docker images. Thanks to [Florian Wallner](https://github.com/powerflo) for [Issue #1756](https://github.com/mikebrady/shairport-sync/issues/1756), [iVolt1](https://github.com/iVolt1) for pointing to a fix and [rp86](https://github.com/rp86) for the reminder!
+* Increase the level of optimisation while building the Shairport Sync application itself.
+
 Version 4.3.4-dev-6-g5f64722a
 ==
 **Enhancement -- HDMI Ports**
