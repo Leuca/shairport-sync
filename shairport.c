@@ -25,6 +25,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -35,9 +37,7 @@
 #include <popt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -1207,8 +1207,8 @@ int parse_options(int argc, char **argv) {
 
     } else {
       if (config_error_type(&config_file_stuff) == CONFIG_ERR_FILE_IO)
-        die("Error reading configuration file \"%s\": \"%s\".",
-              config_file_real_path, config_error_text(&config_file_stuff));
+        die("Error reading configuration file \"%s\": \"%s\".", config_file_real_path,
+            config_error_text(&config_file_stuff));
       else {
         die("Line %d of the configuration file \"%s\":\n%s", config_error_line(&config_file_stuff),
             config_error_file(&config_file_stuff), config_error_text(&config_file_stuff));
@@ -2110,12 +2110,9 @@ int main(int argc, char **argv) {
 
 #ifdef COMPILE_FOR_OPENBSD
   /* Any command to be executed at runtime? */
-  int run_cmds =
-    config.cmd_active_start != NULL ||
-    config.cmd_active_stop != NULL ||
-    config.cmd_set_volume != NULL ||
-    config.cmd_start != NULL ||
-    config.cmd_stop != NULL;
+  int run_cmds = config.cmd_active_start != NULL || config.cmd_active_stop != NULL ||
+                 config.cmd_set_volume != NULL || config.cmd_start != NULL ||
+                 config.cmd_stop != NULL;
 #endif
 
   // mDNS supports maximum of 63-character names (we append 13).
@@ -2381,11 +2378,11 @@ int main(int argc, char **argv) {
 #ifdef COMPILE_FOR_OPENBSD
   /* Past first and last sio_open(3), sndio(7) only needs "audio". */
 
-# ifdef CONFIG_METADATA
+#ifdef CONFIG_METADATA
   /* Only coverart cache is created.
    * Only metadata pipe is special. */
   if (!config.metadata_enabled)
-# endif
+#endif
   {
     /* Drop "cpath dpath". */
     if (run_cmds) {

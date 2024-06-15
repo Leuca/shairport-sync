@@ -1,3 +1,10 @@
+Version 4.3.4-dev-13-gc064b8ba
+==
+**Bug Fixes**
+* Reorder some of the files to be included in `shairport.c` to fix compilation errors in old versions of Mac OS X.
+* Avoid using `TCP_KEEPINTVL` and `TCP_KEEPCNT` if they are not defined (they are not defined in older versions of Mac OS X). Thanks to [Sergey Federov](https://github.com/barracuda156) for raising these [issues](https://github.com/mikebrady/shairport-sync/issues/1860) and pointing at a potential solution.
+* Fix a race condition with the metadata queues. The problem was that the queues were being initialised by threads launched by the main thread which, having started the threads, proceeded to use the queues. But if the threads were late in starting, the queues might not be initialised by the time the main thread tried to use them. Fixed by initialising the queues in the main thread. 
+
 Version 4.3.4-dev-10-gaade1b39
 ==
 **Docker Enhancement -- Continued**
