@@ -1570,12 +1570,16 @@ const char *pid_file_proc(void) {
 #endif
 
 void exit_rtsp_listener() {
-  pthread_cancel(rtsp_listener_thread);
-  pthread_join(rtsp_listener_thread, NULL); // not sure you need this
+  debug(3, "exit_rtsp_listener begins");
+  if (type_of_exit_cleanup != TOE_emergency) {
+    pthread_cancel(rtsp_listener_thread);
+    pthread_join(rtsp_listener_thread, NULL); // not sure you need this
+  }
+  debug(3, "exit_rtsp_listener ends");
 }
 
 void exit_function() {
-
+  debug(3, "exit_function begins");
   if (type_of_exit_cleanup != TOE_emergency) {
     // the following is to ensure that if libdaemon has been included
     // that most of this code will be skipped when the parent process is exiting
@@ -2039,8 +2043,8 @@ int main(int argc, char **argv) {
   config.debugger_show_file_and_line =
       1; // by default, log the file and line of the originating message
   config.debugger_show_relative_time =
-      1;                // by default, log the  time back to the previous debug message
-  config.timeout = 120; // this number of seconds to wait for [more] audio before switching to idle.
+      1;                // by default, log the time back to the previous debug message
+  config.timeout = 120; // wait this number of seconds to wait for a dropped RTSP connection to come back before declaring it lost.
   config.buffer_start_fill = 220;
 
   config.resync_threshold = 0.050;   // default
@@ -2048,7 +2052,6 @@ int main(int argc, char **argv) {
   config.tolerance = 0.002;
 
 #ifdef CONFIG_AIRPLAY_2
-  config.timeout = 0; // disable watchdog
   config.port = 7000;
 #else
   config.port = 5000;

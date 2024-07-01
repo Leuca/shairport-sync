@@ -1,3 +1,24 @@
+Version 4.3.4-dev-25-g15a7090a
+==
+**Change**
+* Revert the `session_timeout` to two minutes (120 seconds). In other words, if a player becomes disconnected for more than two minutes while playing, the session is terminated.
+
+**Bug Fixes**
+* Enable the disconnected session timeout for AirPlay 2 operation -- it had been disabled by default.
+* Fix a bug that prevented a fatal error that occured while directly accessing the alsa output device from terminating the application cleanly.
+
+Version 4.3.4-dev-21-g105299a7
+==
+**Bug Fix**
+* Fixed a bug that prevented Shairport Sync from recovering cleanly if a player disconnected without warning. The problem was that the player thread would not respond to cancel request. Fixed by moving a `pthreadtestcancel()` call to the innermost loop.
+  
+  Associated with this, some obsolete watchdog code has been removed.
+  
+  Also, the `session_timeout` default has been changed from 120 seconds to 60 seconds.
+  
+  Thanks to [Tobias Huttinger](https://github.com/tobiashuttinger) for the bug report -- Issue [#1870](https://github.com/mikebrady/shairport-sync/issues/1870).
+  
+
 Version 4.3.4-dev-13-gc064b8ba
 ==
 **Bug Fixes**

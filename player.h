@@ -167,14 +167,11 @@ typedef struct {
   SOCKADDR remote, local;
   volatile int stop;
   volatile int running;
-  volatile uint64_t watchdog_bark_time;
-  volatile int watchdog_barks; // number of times the watchdog has timed out and done something
 
   uint64_t playstart;
   uint64_t connection_start_time; // the time the device is selected, which could be a long time
                                   // before a play
-  pthread_t thread, timer_requester, rtp_audio_thread, rtp_control_thread, rtp_timing_thread,
-      player_watchdog_thread;
+  pthread_t thread, timer_requester, rtp_audio_thread, rtp_control_thread, rtp_timing_thread;
 
   // buffers to delete on exit
   int32_t *tbuf;
@@ -380,7 +377,6 @@ typedef struct {
                            // request in flight at the same time
 
   pthread_mutex_t reference_time_mutex;
-  pthread_mutex_t watchdog_mutex;
 
   double local_to_remote_time_gradient; // if no drift, this would be exactly 1.0; likely it's
                                         // slightly above or  below.

@@ -3,7 +3,7 @@
  * Copyright (c) James Laird 2013
 
  * Modifications associated with audio synchronization, multithreading and
- * metadata handling copyright (c) Mike Brady 2014-2023
+ * metadata handling copyright (c) Mike Brady 2014-2024
  * All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -610,57 +610,6 @@ int get_play_lock(rtsp_conn_info *conn, int allow_session_interruption) {
     debug(3, "Connection %d has principal_conn.", principal_conn->connection_number);
   pthread_cleanup_pop(1); // release the principal_conn lock
   return response;
-}
-
-void player_watchdog_thread_cleanup_handler(void *arg) {
-  rtsp_conn_info *conn = (rtsp_conn_info *)arg;
-  debug(3, "Connection %d: Watchdog Exit.", conn->connection_number);
-}
-
-void *player_watchdog_thread_code(void *arg) {
-  pthread_cleanup_push(player_watchdog_thread_cleanup_handler, arg);
-  rtsp_conn_info *conn = (rtsp_conn_info *)arg;
-  do {
-    usleep(2000000); // check every two seconds
-    // debug(3, "Connection %d: Check the thread is doing something...", conn->connection_number);
-#ifdef CONFIG_AIRPLAY_2
-    if ((config.dont_check_timeout == 0) && (config.timeout != 0) && (conn->airplay_type == ap_1)) {
-#else
-    if ((config.dont_check_timeout == 0) && (config.timeout != 0)) {
-#endif
-      debug_mutex_lock(&conn->watchdog_mutex, 1000, 0);
-      uint64_t last_watchdog_bark_time = conn->watchdog_bark_time;
-      debug_mutex_unlock(&conn->watchdog_mutex, 0);
-      if (last_watchdog_bark_time != 0) {
-        uint64_t time_since_last_bark =
-            (get_absolute_time_in_ns() - last_watchdog_bark_time) / 1000000000;
-        uint64_t ct = config.timeout; // go from int to 64-bit int
-
-        if (time_since_last_bark >= ct) {
-          conn->watchdog_barks++;
-          if (conn->watchdog_barks == 1) {
-            // debuglev = 3; // tell us everything.
-            debug(1,
-                  "Connection %d: As Yeats almost said, \"Too long a silence / can make a stone "
-                  "of the heart\".",
-                  conn->connection_number);
-            conn->stop = 1;
-            pthread_cancel(conn->thread);
-          } else if (conn->watchdog_barks == 3) {
-            if ((config.cmd_unfixable) && (config.unfixable_error_reported == 0)) {
-              config.unfixable_error_reported = 1;
-              command_execute(config.cmd_unfixable, "unable_to_cancel_play_session", 1);
-            } else {
-              die("an unrecoverable error, \"unable_to_cancel_play_session\", has been detected.",
-                  conn->connection_number);
-            }
-          }
-        }
-      }
-    }
-  } while (1);
-  pthread_cleanup_pop(0); // should never happen
-  pthread_exit(NULL);
 }
 
 static void track_thread(rtsp_conn_info *conn) {
@@ -1349,8 +1298,11 @@ enum rtsp_read_request_response rtsp_read_request(rtsp_conn_info *conn, rtsp_mes
         continue;
       }
       if (errno == ETIMEDOUT) {
-        debug(1, "Connection %d: ETIMEDOUT -- keepalive timeout.", conn->connection_number);
-        reply = rtsp_read_request_response_channel_closed;
+        debug(1,
+              "Connection %d: As Yeats almost said, \"Too long a silence / can make a stone "
+              "of the heart\".",
+              conn->connection_number);
+        reply = rtsp_read_request_response_immediate_shutdown_requested;
         // Note: the socket will be closed when the thread exits
         goto shutdown;
       }
@@ -2116,7 +2068,7 @@ struct pairings {
   uint8_t public_key[32];
 
   struct pairings *next;
-} * pairings;
+} *pairings;
 
 static struct pairings *pairing_find(const char *device_id) {
   for (struct pairings *pairing = pairings; pairing; pairing = pairing->next) {
@@ -5113,7 +5065,7 @@ void rtsp_conversation_thread_cleanup_function(void *arg) {
   if (conn != NULL) {
     int oldState;
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldState);
-    debug(2, "Connection %d: %s rtsp_conversation_thread_func_cleanup_function called.",
+    debug(3, "Connection %d: %s rtsp_conversation_thread_func_cleanup_function called.",
           conn->connection_number, get_category_string(conn->airplay_stream_category));
 #ifdef CONFIG_AIRPLAY_2
     // AP2
@@ -5205,14 +5157,7 @@ void rtsp_conversation_thread_cleanup_function(void *arg) {
     if (rc)
       debug(1, "Connection %d: error %d destroying flush_mutex.", conn->connection_number, rc);
 
-    debug(3, "Cancel watchdog thread.");
-    pthread_cancel(conn->player_watchdog_thread);
-    debug(3, "Join watchdog thread.");
-    pthread_join(conn->player_watchdog_thread, NULL);
-    debug(3, "Delete watchdog mutex.");
-    pthread_mutex_destroy(&conn->watchdog_mutex);
-
-    debug(2, "Connection %d: Closed.", conn->connection_number);
+    debug(3, "Connection %d: Closed.", conn->connection_number);
     conn->running = 0; // for the garbage collector
     pthread_setcancelstate(oldState, NULL);
   }
@@ -5225,11 +5170,6 @@ void msg_cleanup_function(void *arg) {
 
 static void *rtsp_conversation_thread_func(void *pconn) {
   rtsp_conn_info *conn = pconn;
-
-  // create the watchdog mutex, initialise the watchdog time and start the watchdog thread;
-  conn->watchdog_bark_time = get_absolute_time_in_ns();
-  pthread_mutex_init(&conn->watchdog_mutex, NULL);
-  pthread_create(&conn->player_watchdog_thread, NULL, &player_watchdog_thread_code, (void *)conn);
 
   int rc = pthread_mutex_init(&conn->flush_mutex, NULL);
   if (rc)
@@ -5649,22 +5589,26 @@ void *rtsp_listen_loop(__attribute((unused)) void *arg) {
         size_of_reply = sizeof(SOCKADDR);
         if (getsockname(conn->fd, (struct sockaddr *)&conn->local, &size_of_reply) == 0) {
 
+          if ((config.dont_check_timeout == 0) && (config.timeout != 0)) {
 // skip this stuff in OpenBSD
 #ifndef COMPILE_FOR_OPENBSD
-          // Thanks to https://holmeshe.me/network-essentials-setsockopt-SO_KEEPALIVE/ for this.
+            // Thanks to https://holmeshe.me/network-essentials-setsockopt-SO_KEEPALIVE/ for this.
 
-          // turn on keepalive stuff -- wait for keepidle + (keepcnt * keepinttvl time) seconds
-          // before giving up an ETIMEOUT error is returned if the keepalive check fails
+            // turn on keepalive stuff -- wait for keepidle + (keepcnt * keepinttvl time) seconds
+            // before giving up an ETIMEOUT error is returned if the keepalive check fails
 
-          // if TCP_KEEPINTVL is defined, check a few times before declaring the line dead
-          // otherwise just wait a little while longer
+            // if TCP_KEEPINTVL is defined, check a few times before declaring the line dead
+            // otherwise just wait a little while longer
 
 #ifdef TCP_KEEPINTVL
-          int keepAliveIdleTime = 35; // wait this many seconds before checking for a dropped client
-          int keepAliveCount = 5;     // check this many times
-          int keepAliveInterval = 5;  // wait this many seconds between checks
+            int keepAliveIdleTime =
+                config.timeout -
+                5 * 5;              // wait this many seconds before checking for a dropped client
+            int keepAliveCount = 5; // check this many times
+            int keepAliveInterval = 5; // wait this many seconds between checks
 #else
-          int keepAliveIdleTime = 60; // wait this many seconds before dropping a client
+            int keepAliveIdleTime =
+                config.timeout; // wait this many seconds before dropping a client
 #endif
 
 // --- the following is a bit  too complicated
@@ -5681,24 +5625,24 @@ void *rtsp_listen_loop(__attribute((unused)) void *arg) {
 #define KEEP_ALIVE_OR_IDLE_OPTION TCP_KEEPIDLE
 #endif
 
-          if (setsockopt(conn->fd, SOL_OPTION, KEEP_ALIVE_OR_IDLE_OPTION,
-                         (void *)&keepAliveIdleTime, sizeof(keepAliveIdleTime))) {
-            debug(1, "can't set the keepAliveIdleTime wait time");
-          }
+            if (setsockopt(conn->fd, SOL_OPTION, KEEP_ALIVE_OR_IDLE_OPTION,
+                           (void *)&keepAliveIdleTime, sizeof(keepAliveIdleTime))) {
+              debug(1, "can't set the keepAliveIdleTime wait time");
+            }
 // ---
 // if TCP_KEEPINTVL is defined...
 #ifdef TCP_KEEPINTVL
-          if (setsockopt(conn->fd, SOL_OPTION, TCP_KEEPCNT, (void *)&keepAliveCount,
-                         sizeof(keepAliveCount))) {
-            debug(1, "can't set the keepAliveCount count");
+            if (setsockopt(conn->fd, SOL_OPTION, TCP_KEEPCNT, (void *)&keepAliveCount,
+                           sizeof(keepAliveCount))) {
+              debug(1, "can't set the keepAliveCount count");
+            }
+            if (setsockopt(conn->fd, SOL_OPTION, TCP_KEEPINTVL, (void *)&keepAliveInterval,
+                           sizeof(keepAliveInterval))) {
+              debug(1, "can't set the keepAliveCount count interval");
+            };
+#endif
+#endif
           }
-          if (setsockopt(conn->fd, SOL_OPTION, TCP_KEEPINTVL, (void *)&keepAliveInterval,
-                         sizeof(keepAliveInterval))) {
-            debug(1, "can't set the keepAliveCount count interval");
-          };
-#endif
-#endif
-
           // initialise the connection info
           void *client_addr = NULL, *self_addr = NULL;
           conn->connection_ip_family = conn->local.SAFAMILY;

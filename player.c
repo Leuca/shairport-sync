@@ -921,7 +921,7 @@ static abuf_t *buffer_get_frame(rtsp_conn_info *conn) {
   pthread_cleanup_push(buffer_get_frame_cleanup_handler,
                        (void *)conn); // undo what's been done so far
   do {
-
+    pthread_testcancel(); // even if no packets are coming in...
     // get the time
     local_time_now = get_absolute_time_in_ns(); // type okay
     // debug(3, "buffer_get_frame is iterating");
@@ -2269,9 +2269,7 @@ void *player_thread_func(void *arg) {
     if (conn->input_bytes_per_frame == 0)
       debug(1, "conn->input_bytes_per_frame is zero!");
 
-    pthread_testcancel();                     // allow a pthread_cancel request to take effect.
-    abuf_t *inframe = buffer_get_frame(conn); // this has cancellation point(s), but it's not
-                                              // guaranteed that they'll always be executed
+    abuf_t *inframe = buffer_get_frame(conn); // this has a (needed!) deliberate cancellation point in it.
     uint64_t local_time_now = get_absolute_time_in_ns(); // types okay
     config.last_access_to_volume_info_time =
         local_time_now; // ensure volume info remains seen as valid
@@ -3231,14 +3229,6 @@ void *player_thread_func(void *arg) {
 
           if (play_number % print_interval == 0) {
             frames_seen_in_this_logging_interval = 0;
-          }
-
-          // update the watchdog
-          if ((config.dont_check_timeout == 0) && (config.timeout != 0)) {
-            uint64_t time_now = get_absolute_time_in_ns();
-            debug_mutex_lock(&conn->watchdog_mutex, 1000, 0);
-            conn->watchdog_bark_time = time_now;
-            debug_mutex_unlock(&conn->watchdog_mutex, 0);
           }
 
           // debug(1,"Sync error %lld frames. Amount to stuff %d." ,sync_error,amount_to_stuff);
