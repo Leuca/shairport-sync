@@ -1,3 +1,7 @@
+Minor Release Notes
+====
+Minor release notes are attached to the release themselves.
+
 Version 4.3 -- Security Updates, Bug Fixes and Enhancements
 ====
 This update contains important security updates, bug fixes and enhancements. [NQPTP](https://github.com/mikebrady/nqptp) must also be updated, and it should be updated before updating Shairport Sync.
