@@ -1,3 +1,13 @@
+Version 4.3.5-dev-3-ge28c566a
+==
+**Bug Fix**
+* Fix a double-free fault introduced by replacing `avcodec_close` with `avcodec_free_context`. It seems as if the context is freed by a subsequent `av_free` anyway... Sigh.
+
+Version 4.3.5-dev-1-g9909bc21
+==
+**Bug Fix**
+* Use `(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO` now in place of bit-mapped `AV_CH_LAYOUT_STEREO` when setting up the FFmpeg software resampler with `swr_init()`. It was possible to do this starting at FFmpeg 5.1, but is mandatory in FFmpeg 7. Also remove now-deprecated `avcodec_close`. Thanks to [Deyan Dragov](https://github.com/itsdeyan) for the [report](https://github.com/mikebrady/shairport-sync/issues/1876).
+
 Version 4.3.4-dev-25-g15a7090a
 ==
 **Change**
