@@ -574,6 +574,38 @@ void _inform(const char *thefilename, const int linenumber, const char *format, 
   pthread_setcancelstate(oldState, NULL);
 }
 
+void _debug_print_buffer(const char *thefilename, const int linenumber, int level, void *vbuf,
+                         size_t buf_len) {
+  if (level > debuglev)
+    return;
+  char *buf = (char *)vbuf;
+  char *obf =
+      malloc(buf_len * 4 + 1); // to be on the safe side -- 4 characters on average for each byte
+  if (obf != NULL) {
+    char *obfp = obf;
+    unsigned int obfc;
+    for (obfc = 0; obfc < buf_len; obfc++) {
+      snprintf(obfp, 3, "%02X", buf[obfc]);
+      obfp += 2;
+      if (obfc != buf_len - 1) {
+        if (obfc % 32 == 31) {
+          snprintf(obfp, 5, " || ");
+          obfp += 4;
+        } else if (obfc % 16 == 15) {
+          snprintf(obfp, 4, " | ");
+          obfp += 3;
+        } else if (obfc % 4 == 3) {
+          snprintf(obfp, 2, " ");
+          obfp += 1;
+        }
+      }
+    };
+    *obfp = 0;
+    _debug(thefilename, linenumber, level, "%s", obf);
+    free(obf);
+  }
+}
+
 // The following two functions are adapted slightly and with thanks from Jonathan Leffler's sample
 // code at
 // https://stackoverflow.com/questions/675039/how-can-i-create-directory-tree-in-c-linux

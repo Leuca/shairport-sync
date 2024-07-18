@@ -382,11 +382,14 @@ void _die(const char *filename, const int linenumber, const char *format, ...);
 void _warn(const char *filename, const int linenumber, const char *format, ...);
 void _inform(const char *filename, const int linenumber, const char *format, ...);
 void _debug(const char *filename, const int linenumber, int level, const char *format, ...);
+void _debug_print_buffer(const char *thefilename, const int linenumber, int level, void *buf,
+                         size_t buf_len);
 
 #define die(...) _die(__FILE__, __LINE__, __VA_ARGS__)
 #define debug(...) _debug(__FILE__, __LINE__, __VA_ARGS__)
 #define warn(...) _warn(__FILE__, __LINE__, __VA_ARGS__)
 #define inform(...) _inform(__FILE__, __LINE__, __VA_ARGS__)
+#define debug_print_buffer(...) _debug_print_buffer(__FILE__, __LINE__, __VA_ARGS__)
 
 uint8_t *base64_dec(char *input, int *outlen);
 char *base64_enc(uint8_t *input, int length);
