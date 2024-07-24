@@ -3,7 +3,7 @@ name: Basic libao configuration for macOS with BREW -- classic only, because mac
 on:
   workflow_dispatch:
   push:
-    branches: [ "development", "danger" ]
+    branches: [ "development" ]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     

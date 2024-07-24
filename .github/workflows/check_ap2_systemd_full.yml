@@ -3,7 +3,7 @@ name: Configuration (without pa, soundio or apple-alac) for systemd.
 on:
   workflow_dispatch:
   push:
-    branches: [ "development", "danger" ]
+    branches: [ "development" ]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     
@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v3.5.2
+    - uses: actions/checkout@v4
     - name: Install Dependencies
-      run: sudo apt-get -y --no-install-recommends install build-essential git xmltoman autoconf automake libtool libpopt-dev libconfig-dev libasound2-dev libao-dev libjack-dev libsndio-dev libglib2.0-dev libmosquitto-dev avahi-daemon libavahi-client-dev libssl-dev libsoxr-dev libplist-dev libsodium-dev libavutil-dev libavcodec-dev libavformat-dev uuid-dev libgcrypt-dev xxd    
+      run: sudo apt-get -y --no-install-recommends install xmltoman libpopt-dev libconfig-dev libasound2-dev libao-dev libjack-dev libsndio-dev libmosquitto-dev avahi-daemon libavahi-client-dev libsoxr-dev libplist-dev libsodium-dev libavutil-dev libavcodec-dev libavformat-dev libgcrypt-dev 
     - name: Configure
       run: |
-        autoreconf -i
+        autoreconf -fi
         ./configure --sysconfdir=/etc --with-alsa --with-ao --with-dummy --with-jack --with-pipe --with-sndio --with-stdout --with-soxr --with-avahi --with-ssl=openssl --with-systemd --with-dbus-interface --with-mpris-interface --with-mqtt-client --with-airplay-2
     - name: Make
       run: |

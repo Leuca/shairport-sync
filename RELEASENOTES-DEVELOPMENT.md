@@ -1,3 +1,16 @@
+Version 4.3.5-dev-23-g1687b2a4
+==
+**Docker Enhancement**
+* The AirPlay 2 Docker image now incorporates the PipeWire backend. Thanks to [Maxim](https://github.com/irdkwmnsb) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1880).
+  
+Version 4.3.5-dev-6-g597aba0c
+==
+**Bug Chasing**
+* Modify the `sndio` backend (native to OpenBSD, also used in FreeBSD) to try to deal with an intermittent bug. Specifically, use an explicit `is_running` flag to keep track of the playing status of the backend.
+
+**Configuration Comment Update**
+* Update comments in the `sndio` section of the sample configuration file.
+
 Version 4.3.5-dev-3-ge28c566a
 ==
 **Bug Fix**

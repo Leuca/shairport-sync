@@ -23,6 +23,7 @@ RUN apk -U add \
         libsndfile-dev \
         libsodium-dev \
         libtool \
+        pipewire-dev \
         mosquitto-dev \
         popt-dev \
         pulseaudio-dev \
@@ -58,7 +59,7 @@ RUN autoreconf -i ../
 RUN CFLAGS="-O3" CXXFLAGS="-O3" ../configure --sysconfdir=/etc --with-alsa --with-pa --with-soxr --with-avahi --with-ssl=openssl \
         --with-airplay-2 --with-metadata --with-dummy --with-pipe --with-dbus-interface \
         --with-stdout --with-mpris-interface --with-mqtt-client \
-        --with-apple-alac --with-convolution
+        --with-apple-alac --with-convolution --with-pw
 RUN make -j $(nproc)
 RUN DESTDIR=install make install
 WORKDIR /
@@ -87,6 +88,7 @@ RUN apk -U add \
         libsndfile \
         libsodium \
         libuuid \
+        pipewire \
         man-pages \
         mandoc \
         mosquitto \

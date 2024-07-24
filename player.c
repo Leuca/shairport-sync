@@ -2141,9 +2141,10 @@ void *player_thread_func(void *arg) {
   if ((config.output->parameters == NULL) || (conn->input_bit_depth > output_bit_depth) ||
       (config.playback_mode == ST_mono))
     conn->enable_dither = 1;
-
-  // remember, the output device may never have been initialised prior to this call
-  config.output->start(config.output_rate, config.output_format); // will need a corresponding stop
+  
+  // call the backend's start() function if it exists.
+  if (config.output->start != NULL)
+    config.output->start(config.output_rate, config.output_format);
 
   // we need an intermediate "transition" buffer
 
