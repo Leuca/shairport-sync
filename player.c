@@ -1179,6 +1179,10 @@ static abuf_t *buffer_get_frame(rtsp_conn_info *conn) {
           if (conn->ab_buffering) {  // if we are getting packets but not yet forwarding them to the
                                      // player
             if (conn->first_packet_timestamp == 0) { // if this is the very first packet
+            
+              if (config.output->prepare_to_play) // tell the player to get ready
+                config.output->prepare_to_play(); // there could be more than one of these sent
+                
               conn->first_packet_timestamp =
                   curframe->given_timestamp; // we will keep buffering until we are
                                              // supposed to start playing this

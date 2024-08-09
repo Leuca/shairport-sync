@@ -56,6 +56,7 @@ static char *audio_lmb, *audio_umb, *audio_toq, *audio_eoq;
 static size_t audio_size = buffer_allocation;
 static size_t audio_occupancy;
 static int enable_fill;
+static int stream_is_active;
 
 struct timing_data {
   int pw_time_is_valid;     // set when the pw_time has been set
@@ -268,9 +269,9 @@ static int init(__attribute__((unused)) int argc, __attribute__((unused)) char *
   // called in a realtime thread.
   pw_stream_connect(data.stream, PW_DIRECTION_OUTPUT, PW_ID_ANY,
                     PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
-                        PW_STREAM_FLAG_RT_PROCESS,
+                        PW_STREAM_FLAG_RT_PROCESS | PW_STREAM_FLAG_INACTIVE,
                     params, 1);
-
+  stream_is_active = 0;
   pw_thread_loop_unlock(data.loop);
   return 0;
 }
@@ -279,9 +280,27 @@ static void start(__attribute__((unused)) int sample_rate,
                   __attribute__((unused)) int sample_format) {
 }
 
+static void prepare_to_play() {
+  // debug(1, "prepare to play");
+  if (stream_is_active == 0) {
+    pw_thread_loop_lock(data.loop);
+    pw_stream_set_active(data.stream, true);
+    pw_thread_loop_unlock(data.loop);
+    stream_is_active = 1;
+    debug(3, "prepare to play activating stream");
+  }
+}
+
 static int play(__attribute__((unused)) void *buf, int samples,
                 __attribute__((unused)) int sample_type, __attribute__((unused)) uint32_t timestamp,
                 __attribute__((unused)) uint64_t playtime) {
+  if (stream_is_active == 0) {
+    pw_thread_loop_lock(data.loop);
+    pw_stream_set_active(data.stream, true);
+    pw_thread_loop_unlock(data.loop);
+    stream_is_active = 1;
+    debug(3, "set stream active");
+  }
   // copy the samples into the queue
   debug(3, "play %u samples; %u bytes already in the buffer.", samples, audio_occupancy);
   size_t bytes_to_transfer = samples * DEFAULT_CHANNELS * DEFAULT_BYTES_PER_SAMPLE;
@@ -382,8 +401,15 @@ static void stop(void) {
   // if (enable_fill == 0) {
   //   debug(1, "stop enable_fill");
   // }
-  enable_fill = 1;
   pthread_mutex_unlock(&buffer_mutex);
+  if (stream_is_active == 1) {
+    pw_thread_loop_lock(data.loop);
+    // pw_stream_flush(data.stream, true);
+    pw_stream_set_active(data.stream, false);
+    pw_thread_loop_unlock(data.loop);
+    stream_is_active = 0;
+    debug(3, "set stream inactive");
+  }
 }
 
 audio_output audio_pw = {.name = "pw",
@@ -398,6 +424,7 @@ audio_output audio_pw = {.name = "pw",
                          .delay = &delay,
                          .stats = NULL,
                          .play = &play,
+                         .prepare_to_play = &prepare_to_play,
                          .volume = NULL,
                          .parameters = NULL,
                          .mute = NULL};

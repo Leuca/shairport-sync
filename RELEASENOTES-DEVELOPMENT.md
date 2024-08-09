@@ -1,12 +1,23 @@
+Version 4.3.5-dev-29-g17b134b0
+==
+**PipeWire Enhancement**
+* Initialise the PipeWire backend so that the PipeWire stream is initially inactive.
+
+Version 4.3.5-dev-27-g8e6bd06c
+==
+**PipeWire Enhancement**
+* Until now, the stream in the PipeWire backend remained permanently active. This meant that external progrmas could not tell when audio was really playing or not. Now the stream will go inactive (i.e. "paused") when play is stopped and active when play resumes.
+  Note that in AirPlay 2, play often stops momentarily between tracks, and so there will be momentary changes from active to inactive and back to active again in the PipeWire backend. This may change as the backend improves. Thanks to [Nemo157](https://github.com/Nemo157) for the Idea: https://github.com/mikebrady/shairport-sync/discussions/1889.
+  
 Version 4.3.5-dev-23-g1687b2a4
 ==
 **Docker Enhancement**
-* The AirPlay 2 Docker image now incorporates the PipeWire backend. Thanks to [Maxim](https://github.com/irdkwmnsb) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1880).
+* The AirPlay 2 Docker image now incorporates the PipeWire backend. Thanks to [Maxim](https://github.com/irdkwmnsb) for the PR: https://github.com/mikebrady/shairport-sync/pull/1880.
   
 Version 4.3.5-dev-6-g597aba0c
 ==
-**Bug Chasing**
-* Modify the `sndio` backend (native to OpenBSD, also used in FreeBSD) to try to deal with an intermittent bug. Specifically, use an explicit `is_running` flag to keep track of the playing status of the backend.
+**FreeBSD Bug Fix**
+* Modify the `sndio` backend (native to OpenBSD, also used in FreeBSD) to deal with an intermittent bug. Specifically, use an explicit `is_running` flag to keep track of the playing status of the backend. Thanks to [Jan Przybylak](https://github.com/janprzy), [Klemens Nanni](https://github.com/klemensn) and [Amanda Stjerna](https://github.com/amandasystems) for their help and persistence tracking down this problem. Resolves Issue: https://github.com/mikebrady/shairport-sync/issues/1765.
 
 **Configuration Comment Update**
 * Update comments in the `sndio` section of the sample configuration file.
@@ -19,7 +30,7 @@ Version 4.3.5-dev-3-ge28c566a
 Version 4.3.5-dev-1-g9909bc21
 ==
 **Bug Fix**
-* Use `(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO` now in place of bit-mapped `AV_CH_LAYOUT_STEREO` when setting up the FFmpeg software resampler with `swr_init()`. It was possible to do this starting at FFmpeg 5.1, but is mandatory in FFmpeg 7. Also remove now-deprecated `avcodec_close`. Thanks to [Deyan Dragov](https://github.com/itsdeyan) for the [report](https://github.com/mikebrady/shairport-sync/issues/1876).
+* Use `(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO` now in place of bit-mapped `AV_CH_LAYOUT_STEREO` when setting up the FFmpeg software resampler with `swr_init()`. It was possible to do this starting at FFmpeg 5.1, but is mandatory in FFmpeg 7. Also remove now-deprecated `avcodec_close`. Thanks to [Deyan Dragov](https://github.com/itsdeyan) for the report: https://github.com/mikebrady/shairport-sync/issues/1876.
 
 Version 4.3.4-dev-25-g15a7090a
 ==
