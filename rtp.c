@@ -2364,7 +2364,11 @@ void *rtp_buffered_audio_processor(void *arg) {
   };
 
   av_opt_set_sample_fmt(swr, "out_sample_fmt", av_format, 0);
-  swr_init(swr);
+  int swr_err = swr_init(swr);
+  if (swr_err !=0){
+    die("FFMpeg swr_init() failed Error %d (%s)",
+        swr_err, av_err2str(swr_err));
+  }
 
   uint8_t packet[16 * 1024];
   unsigned char m[16 * 1024]; // leave the first 7 bytes blank to make room for the ADTS
