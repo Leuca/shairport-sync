@@ -107,12 +107,12 @@ Reboot for these changes to take effect.
 
 Next, install the packages that are needed for Shairport Sync and NQPTP:
 ```
-# pkg install git autotools pkgconf popt libconfig openssl alsa-utils \
+# pkg install git autotools pkgconf popt libconfig openssl alsa-utils libsoxr \
       libplist libsodium ffmpeg e2fsprogs-libuuid vim
 ```
 If you are building classic Shairport Sync, the list of packages is shorter:
 ```
-# pkg install git autotools pkgconf popt libconfig openssl alsa-utils
+# pkg install git autotools pkgconf popt libconfig openssl alsa-utils libsoxr
 ```
 ## 3. Build
 ### NQPTP
