@@ -90,6 +90,131 @@ void on_connect(struct mosquitto *mosq, __attribute__((unused)) void *userdata,
     snprintf(remotetopic, strlen(config.mqtt_topic) + 8, "%s/remote", config.mqtt_topic);
     mosquitto_subscribe(mosq, NULL, remotetopic, 0);
   }
+
+  // send autodiscovery messages if enabled
+  if (config.mqtt_enable_autodiscovery && config.mqtt_publish_parsed) {
+    send_autodiscovery_messages(mosq);
+  }
+}
+
+// function to send autodiscovery messages for Home Assistant
+void send_autodiscovery_messages(struct mosquitto *mosq) {
+    const char *device_name = config.service_name;
+    const char *device_id = config.airplay_device_id ? config.airplay_device_id : config.service_name;
+    const char *device_id_no_colons = str_replace(device_id, ":", "");
+    const char *sw_version = get_version_string();
+    const char *model = "shairport-sync";
+    const char *model_friendly = "Shairport Sync";
+    const char *manufacturer = "Mike Brady";
+    const char *autodiscovery_prefix = (config.mqtt_autodiscovery_prefix != NULL) ?
+        config.mqtt_autodiscovery_prefix : "homeassistant";
+
+    char topic[512];
+    char payload[1280];
+    char device_payload[512];
+    char id_string[128];
+
+    snprintf(device_payload, sizeof(device_payload),
+        "\"device\": {"
+            "\"identifiers\": [\"%s\"],"
+            "\"name\": \"%s\","
+            "\"model\": \"%s\","
+            "\"sw_version\": \"%s\","
+            "\"manufacturer\": \"%s\""
+        "}",
+        device_id, device_name, model_friendly, sw_version, manufacturer);
+
+    // when adding sensors here, be sure to also update sensor_names and icons below!
+    const char *sensors[] = {
+        "artist",
+        "album",
+        "title",
+        "genre",
+        "format",
+        "output_format",
+        "output_frame_rate",
+        "track_id",
+        "client_ip",
+        "client_mac_address",
+        "client_name",
+        "client_model",
+        "client_device_id",
+        "server_ip",
+        "volume",
+        "active",
+        "playing",
+        NULL
+    };
+
+    const char *sensor_names[] = {
+        "Artist",
+        "Album",
+        "Title",
+        "Genre",
+        "Format",
+        "Output Format",
+        "Output Frame Rate",
+        "Track ID", 
+        "Client IP",
+        "Client MAC Address",
+        "Client Name",
+        "Client Model",
+        "Client Device ID",
+        "Server IP",
+        "Volume",
+        "Active Session",
+        "Playing"
+    };
+
+    const char *icons[] = {
+        "mdi:account-music", // artist
+        "mdi:album", // album
+        "mdi:music", // title
+        "mdi:music-box-multiple", // genre
+        "mdi:file", // format
+        "mdi:file", // output format
+        "mdi:file-chart", // output frame rate
+        "mdi:identifier", // track ID
+        "mdi:ip", // client IP
+        "mdi:hexadecimal", // client MAC address
+        "mdi:cellphone-text", // client name
+        "mdi:cellphone-text", // client model
+        "mdi:hexadecimal", // client device ID
+        "mdi:ip-network", // server IP
+        "mdi:volume-high", // volume
+        "mdi:play-box-multiple", // active
+        "mdi:play-box-multiple-outline" // playing
+    };
+
+    for (int i = 0; sensors[i] != NULL; i++) {
+        bool is_binary_sensor = (strcmp(sensors[i], "active") == 0 || strcmp(sensors[i], "playing") == 0);
+        bool is_volume_sensor = strcmp(sensors[i], "volume") == 0;
+
+        snprintf(topic, sizeof(topic), "%s/%ssensor/%s_%s/%s/config",
+            autodiscovery_prefix, is_binary_sensor ? "binary_" : "",
+            model, device_id_no_colons, sensors[i]);
+
+        snprintf(id_string, sizeof(id_string), "%s_%s_%s", model, device_name, sensors[i]);
+
+        snprintf(payload, sizeof(payload),
+            "{"
+                "\"name\": \"%s\","
+                "\"state_topic\": \"%s/%s\","
+                "\"icon\": \"%s\","
+                "\"unique_id\": \"%s\","
+                "\"object_id\": \"%s\","
+                "%s%s%s"
+            "}",
+            sensor_names[i], config.mqtt_topic, sensors[i], icons[i], id_string, id_string,
+            is_binary_sensor ? "\"payload_on\": \"1\",\"payload_off\": \"0\"," : "",
+            is_volume_sensor ? "\"value_template\": \"{{ ((value | regex_findall_index("
+                "find='^(.+?),', index=0, ignorecase=False) | float / 30 + 1) * 100) | round(0) }}\","
+                "\"unit_of_measurement\": \"%\"," : "",
+            device_payload);
+
+        mosquitto_publish(mosq, NULL, topic, strlen(payload), payload, 0, true);
+        debug(2, "[MQTT]: published autodiscovery for %s", id_string);
+    }
 }
 
 // helper function to publish under a topic and automatically append the main topic
@@ -167,12 +292,14 @@ void mqtt_process_metadata(uint32_t type, uint32_t code, char *data, uint32_t le
     } else if (type == 'ssnc') {
       switch (code) {
       case 'abeg':
+        mqtt_publish("active", "1", 1);
         mqtt_publish("active_start", data, length);
         break;
       case 'acre':
         mqtt_publish("active_remote_id", data, length);
         break;
       case 'aend':
+        mqtt_publish("active", "0", 1);
         mqtt_publish("active_end", data, length);
         break;
       case 'asal':
@@ -210,9 +337,11 @@ void mqtt_process_metadata(uint32_t type, uint32_t code, char *data, uint32_t le
         mqtt_publish("output_frame_rate", data, length);
         break;
       case 'pbeg':
+        mqtt_publish("playing", "1", 1);
         mqtt_publish("play_start", data, length);
         break;
       case 'pend':
+        mqtt_publish("playing", "0", 1);
         mqtt_publish("play_end", data, length);
         break;
       case 'pfls':
@@ -224,6 +353,7 @@ void mqtt_process_metadata(uint32_t type, uint32_t code, char *data, uint32_t le
         }
         break;
       case 'prsm':
+        mqtt_publish("playing", "1", 1);
         mqtt_publish("play_resume", data, length);
         break;
       case 'pvol':

@@ -1300,6 +1300,10 @@ int parse_options(int argc, char **argv) {
     if (config.mqtt_publish_cover && !config.get_coverart) {
       die("You need to have metadata.include_cover_art enabled in order to use mqtt.publish_cover");
     }
+    config_set_lookup_bool(config.cfg, "mqtt.enable_autodiscovery", &config.mqtt_enable_autodiscovery);
+    if (config_lookup_string(config.cfg, "mqtt.autodiscovery_prefix", &str)) {
+      config.mqtt_autodiscovery_prefix = (char *)str;
+    }
     config_set_lookup_bool(config.cfg, "mqtt.enable_remote", &config.mqtt_enable_remote);
     if (config_lookup_string(config.cfg, "mqtt.empty_payload_substitute", &str)) {
       if (strlen(str) == 0)
@@ -2550,6 +2554,7 @@ int main(int argc, char **argv) {
   debug(1, "mqtt will%s publish parsed metadata.", config.mqtt_publish_parsed ? "" : " not");
   debug(1, "mqtt will%s publish cover Art.", config.mqtt_publish_cover ? "" : " not");
   debug(1, "mqtt remote control is %sabled.", config.mqtt_enable_remote ? "en" : "dis");
+  debug(1, "mqtt autodiscovery is %sabled.", config.mqtt_enable_autodiscovery ? "en" : "dis");
 #endif
 
 #ifdef CONFIG_CONVOLUTION
