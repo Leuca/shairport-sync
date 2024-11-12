@@ -1179,15 +1179,29 @@ ssize_t timed_read_from_rtsp_connection(rtsp_conn_info *conn, uint64_t wait_time
             read_encrypted(conn->fd, &conn->ap2_pairing_context.control_cipher_bundle, buf, count);
       } else {
         result = read(conn->fd, buf, count);
+        if (result == 0) {
+          debug(1, "AP2 read result 0, for a request count of %u.", count);          
+        }
       }
 #else
       result = read(conn->fd, buf, count);
+      if (result == 0) {
+        debug(1, "AP1 read result 0, for a request count of %u.", count);
+        
+      }
 #endif
+      if ((result == 0) && (errno != 0)) {
+        char errorstring[1024];
+        strerror_r(errno, (char *)errorstring, sizeof(errorstring));
+        debug(1, "Connection %d: read result 0, error %d: \"%s\".",
+          conn->connection_number, errno, (char *)errorstring);
+      }
+
       if (wait_time != 0)
         remaining_time = time_to_wait_to - get_absolute_time_in_ns();
-      if (((result == -1) && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) && (remaining_time > 0))
+      if ((((result == -1) || (result == 0)) && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) && (remaining_time > 0))
         debug(1, "remaining time on a timed read is %" PRId64 " ns.", remaining_time);
-    } while (((result == -1) && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) &&
+    } while ((((result == -1) || (result == 0)) && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) &&
              (remaining_time > 0));
 
   } else {

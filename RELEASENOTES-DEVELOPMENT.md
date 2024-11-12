@@ -1,3 +1,8 @@
+Version 4.3.5-dev-53-gaa3af3b3
+==
+**Bug Fix**
+* Fix a problem in the Jack Audio backend `audio_jack.c`. The problem was that if the system's jack server was running at anything other than 44,100 frames per second, the delay information being returned by the backend was incorrect. Thanks to [lucianoiam](https://github.com/lucianoiam) for [reporting the problem](https://github.com/mikebrady/shairport-sync/issues/1926) and for checking the proposed solution. 
+
 Version 4.3.5-dev-48-gfe743fdf
 ==
 **Docker Bug Fixes**
