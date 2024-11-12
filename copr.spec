@@ -28,9 +28,6 @@ BuildRequires:  libuuid-devel
 BuildRequires:  libalac-devel
 BuildRequires:  vim-common
 BuildRequires:  alsa-lib-devel
-BuildRequires:  pulseaudio-libs-devel
-BuildRequires:  pipewire-devel
-BuildRequires:  pipewire-jack-audio-connection-kit-devel
 BuildRequires:  systemd-rpm-macros
 # Allow build with both free and non-free versions
 BuildRequires:  (libavformat-devel or libavformat-free-devel)
@@ -55,7 +52,7 @@ This version of Shairport Sync has been built from the development branch
 
 %build
 autoreconf -i -f
-%configure --with-avahi --with-systemd --with-alsa --with-pa --with-pw --with-jack --with-ssl=openssl --with-soxr --with-apple-alac --with-airplay-2 --without-create-user-group
+%configure --with-avahi --with-systemd --with-alsa --with-ssl=openssl --with-soxr --with-apple-alac --with-airplay-2 --without-create-user-group
 %make_build
 
 %install
