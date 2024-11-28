@@ -300,8 +300,9 @@ AM_CONDITIONAL([USE_AO], [test "x$with_ao" = "xyes"])
 # Look for Soundio flag
 AC_ARG_WITH(soundio, [AS_HELP_STRING([--with-soundio],[choose soundio API support.])])
 if test "x$with_soundio" = "xyes" ; then
-  AC_DEFINE([CONFIG_SOUNDIO], 1, [Include SoundIO Support.])
-  AC_CHECK_LIB([soundio], [soundio_create], , AC_MSG_ERROR(soundio support requires the soundio library -- libsoundio-dev suggested))
+  AC_DEFINE([CONFIG_SOUNDIO], 1, [Include the SoundIO (libsoundio) backend.])
+  AC_CHECK_LIB([soundio], [soundio_create], , AC_MSG_ERROR(soundio support requires the libsoundio library -- libsoundio-dev suggested (note: the soundio backend is deprecated and will be removed in a future update)))
+  AC_MSG_WARN([The soundio (libsoundio) backend is deprecated and will be removed in a future update.])
 fi
 AM_CONDITIONAL([USE_SOUNDIO], [test "x$with_soundio" = "xyes"])
 

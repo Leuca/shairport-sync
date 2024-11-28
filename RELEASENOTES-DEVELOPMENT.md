@@ -1,3 +1,10 @@
+Version 4.3.5-dev-56-g758648a5
+==
+**Deprecation Note**
+* The `soundio` backend is being deprecated and will be removed in a future update. It seems that nobody is using it, and as it stands it is very inflexible.
+
+  _"If this be error and upon me proved,"_ -- as [Shakespeare wrote](https://www.poetryfoundation.org/poems/45106/sonnet-116-let-me-not-to-the-marriage-of-true-minds) -- please let us know...
+
 Version 4.3.5-dev-53-gaa3af3b3
 ==
 **Bug Fix**
