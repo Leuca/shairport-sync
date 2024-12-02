@@ -1,6 +1,6 @@
 Minor Release Notes
 ====
-Minor release notes are attached to the release themselves.
+Minor release notes are attached to the releases themselves.
 
 Version 4.3 -- Security Updates, Bug Fixes and Enhancements
 ====

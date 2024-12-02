@@ -1,3 +1,7 @@
+Version 4.3.6-dev-1-g409397d3
+==
+This is effectively the same as the release version 4.3.5.
+
 Version 4.3.5-dev-56-g758648a5
 ==
 **Deprecation Note**

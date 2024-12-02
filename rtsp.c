@@ -1180,20 +1180,20 @@ ssize_t timed_read_from_rtsp_connection(rtsp_conn_info *conn, uint64_t wait_time
       } else {
         result = read(conn->fd, buf, count);
         if (result == 0) {
-          debug(1, "AP2 read result 0, for a request count of %u.", count);          
+          debug(3, "AP2 read result 0, for a request count of %u.", count);          
         }
       }
 #else
       result = read(conn->fd, buf, count);
       if (result == 0) {
-        debug(1, "AP1 read result 0, for a request count of %u.", count);
+        debug(3, "AP1 read result 0, for a request count of %u.", count);
         
       }
 #endif
       if ((result == 0) && (errno != 0)) {
         char errorstring[1024];
         strerror_r(errno, (char *)errorstring, sizeof(errorstring));
-        debug(1, "Connection %d: read result 0, error %d: \"%s\".",
+        debug(2, "Connection %d: read result 0, error %d: \"%s\".",
           conn->connection_number, errno, (char *)errorstring);
       }
 

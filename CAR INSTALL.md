@@ -57,14 +57,13 @@ Skip this section if you are building classic Shairport Sync – NQPTP is not ne
 Download, install, enable and start NQPTP from [here](https://github.com/mikebrady/nqptp) following the guide for Linux.
 
 #### Shairport Sync
-Download Shairport Sync, check out the `development` branch and configure, compile and install it.
+Download Shairport Sync, configure, compile and install it.
 
 * Omit the `--with-airplay-2` from the `./configure` options if you are building classic Shairport Sync.
 
 ```
 $ git clone https://github.com/mikebrady/shairport-sync.git
 $ cd shairport-sync
-$ git checkout development
 $ autoreconf -fi
 $ ./configure --sysconfdir=/etc --with-alsa \
     --with-soxr --with-avahi --with-ssl=openssl --with-systemd --with-airplay-2

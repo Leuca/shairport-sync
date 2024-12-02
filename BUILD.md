@@ -122,7 +122,7 @@ Download, install, enable and start NQPTP from [here](https://github.com/mikebra
 
 ### Shairport Sync
 #### Build and Install
-Download Shairport Sync, check out the `development` branch and configure, compile and install it. Before executing the commands, please note the following:
+Download Shairport Sync, branch and configure, compile and install it. Before executing the commands, please note the following:
 
 * If building for FreeBSD, replace `--with-systemd` with `--with-os=freebsd --with-freebsd-service`.
 * Omit the `--with-airplay-2` from the `./configure` options if you are building classic Shairport Sync.
@@ -131,7 +131,6 @@ Download Shairport Sync, check out the `development` branch and configure, compi
 ```
 $ git clone https://github.com/mikebrady/shairport-sync.git
 $ cd shairport-sync
-$ git checkout development
 $ autoreconf -fi
 $ ./configure --sysconfdir=/etc --with-alsa \
     --with-soxr --with-avahi --with-ssl=openssl --with-systemd --with-airplay-2
@@ -155,7 +154,7 @@ If you have problems, please check the items in Final Notes below, or in the [TR
 Note: Shairport Sync will run indefinitely -- use Control-C it to stop it.
 
 ## 5. Enable and Start Service
-If your system has a Graphical User Interface (GUI) it probably uses PulseAudio or PipeWire for audio services. If that is the case, please review [Working with PulseAudio or PipeWire](https://github.com/mikebrady/shairport-sync/blob/development/ADVANCED%20TOPICS/PulseAudioAndPipeWire.md).
+If your system has a Graphical User Interface (GUI) it probably uses PulseAudio or PipeWire for audio services. If that is the case, please review [Working with PulseAudio or PipeWire](https://github.com/mikebrady/shairport-sync/blob/master/ADVANCED%20TOPICS/PulseAudioAndPipeWire.md).
 Otherwise, once you are happy that Shairport Sync runs from the command line, you should enable and start the `shairport-sync` service. This will launch Shairport Sync automatically as a background "daemon" service when the system powers up:
 
 ### Linux
