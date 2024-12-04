@@ -1,3 +1,8 @@
+Version 4.3.6-dev-3-ge4d3c6f7
+==
+**Bug Fix**
+*  Fix a potential bug by checking that a buffer is not zero before attempting to deallocate it.
+
 Version 4.3.6-dev-1-g409397d3
 ==
 This is effectively the same as the release version 4.3.5.

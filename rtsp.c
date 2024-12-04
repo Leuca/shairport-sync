@@ -1439,7 +1439,10 @@ enum rtsp_read_request_response rtsp_read_request(rtsp_conn_info *conn, rtsp_mes
   *the_packet = msg;
 shutdown:
   if (reply != rtsp_read_request_response_ok) {
-    msg_free(the_packet);
+    if (*the_packet != NULL) {
+      debug(3, "Freeing the_packet");
+      msg_free(the_packet);
+    }
     release_buffer = 1; // allow the buffer to be released
   }
   pthread_cleanup_pop(release_buffer);
