@@ -377,7 +377,7 @@ void stream_write_cb(pa_stream *stream, size_t requested_bytes,
                      __attribute__((unused)) void *userdata) {
   check_pa_stream_status(stream, "audio_pa stream_write_cb.");
   int bytes_to_transfer = requested_bytes;
-  int bytes_transferred = 0;
+  // int bytes_transferred = 0;
   uint8_t *buffer = NULL;
   int ret = 0;
   pthread_mutex_lock(&buffer_mutex);
@@ -413,7 +413,7 @@ void stream_write_cb(pa_stream *stream, size_t requested_bytes,
         ret = pa_stream_write(stream, buffer, bytes_we_can_transfer, NULL, 0LL, PA_SEEK_RELATIVE);
         audio_toq = audio_lmb + bytes_we_can_transfer - first_portion_to_write;
       }
-      bytes_transferred += bytes_we_can_transfer;
+      // bytes_transferred += bytes_we_can_transfer;
       audio_occupancy -= bytes_we_can_transfer;
       bytes_to_transfer -= bytes_we_can_transfer;
     }
