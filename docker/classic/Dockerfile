@@ -104,4 +104,7 @@ RUN rm -rf /etc/avahi/services/*.service
 COPY ./docker/run.sh ./run.sh
 RUN chmod +x /run.sh
 
+# D-Bus might need this directory
+RUN mkdir -p /run/dbus
+
 ENTRYPOINT ["/init","./run.sh"]

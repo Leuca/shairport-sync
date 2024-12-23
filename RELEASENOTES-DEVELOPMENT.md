@@ -1,3 +1,21 @@
+Version 4.3.6-dev-13-g00e595ce
+==
+**Docker Build Optimistion**
+
+Ensure the `/run/dbus` directory, needed for dbus to start, is defined.
+
+Version 4.3.6-dev-9-gf7401ec7
+==
+**Docker Build Optimisation**
+
+Improve the Dockerfile build sequences as follows:
+1. Build each dependency in a separate stage, facilitating parallel builds.
+2. Define default value for ARGS, permitting easier local docker builds.
+3. Clone the specified branch only, and to a depth of 1, thus getting relevant data faster.
+4. Copy files in a one-off command, reducing the amount of Docker layers created.
+
+Many thanks to [David Girón](https://github.com/duhow) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1945).
+
 Version 4.3.6-dev-3-ge4d3c6f7
 ==
 **Bug Fix**
