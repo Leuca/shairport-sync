@@ -1,3 +1,12 @@
+Version 4.3.6-dev-17-gce73230e
+==
+
+Correct and clarify the [statistics documentation](https://github.com/mikebrady/shairport-sync/blob/master/ADVANCED%20TOPICS/Statistics.md).
+1. The descriptions of Net Sync PPM and All Sync PPM were partly swapped -- this has been corrected.
+2. Generally clarify the language and harmonize the wording with the introduction.
+
+Many thanks to [willmo](https://github.com/willmo) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1950).
+    
 Version 4.3.6-dev-13-g00e595ce
 ==
 **Docker Build Optimistion**
