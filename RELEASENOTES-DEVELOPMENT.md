@@ -1,3 +1,7 @@
+Version 4.3.6-dev-19-g39781ece
+==
+Fix a typo in the consiguration file. Many thanks to [Justin](https://github.com/OptimoSupreme).
+
 Version 4.3.6-dev-17-gce73230e
 ==
 
