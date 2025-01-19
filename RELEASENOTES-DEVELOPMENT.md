@@ -1,3 +1,7 @@
+Version TBA
+==
+Show how to use MQTTThing with Homebridge to represent Shairport Sync’s ‘active’ status. Thanks to [keefar](https://github.com/keefar) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1955). 
+
 Version 4.3.6-dev-19-g39781ece
 ==
 Fix a typo in the consiguration file. Many thanks to [Justin](https://github.com/OptimoSupreme).

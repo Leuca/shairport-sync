@@ -199,3 +199,36 @@ mqtt:
       value_template: "{{ value |  regex_findall_index(find='^(.+?),', index=0, ignorecase=False) | float / 30 + 1  }}"
       unit_of_measurement: 'percent'
 ```
+
+### [Homebridge](https://homebridge.io/) [MQTTThing](https://github.com/arachnetech/homebridge-mqttthing#readme) Examples
+
+**Homebridge** is a lightweight Node.js server that brings non-HomeKit devices to Apple’s Home app, and **MQTTThing** is a versatile Homebridge plugin that integrates MQTT-enabled devices with HomeKit.
+
+While MQTTThing offers a speaker characteristic, it does not seem to be recognized by HomeKit. Instead, the **contact sensor** characteristic can effectively represent Shairport Sync’s `active` status within HomeKit, enabling users to trigger automations based on this status. 
+
+Below is an example configuration for Homebridge's JSON Config to represent Shairport Sync's `active` status:
+
+```json
+"accessories": [
+	{
+	    "type": "contactSensor",
+	    "name": "Shairport",
+	    "url": "hostname:1883",
+	    "username": "user",
+	    "password": "password",
+	    "topics": {
+		"getContactSensorState": "shairport/active"
+	    },
+	    "onValue": "1",
+	    "offValue": "0",
+	    "otherValueOff": false,
+	    "accessory": "mqttthing"
+	}
+]
+```
+
+* Replace hostname:1883, user, and password with the details of your MQTT broker.
+* The topic shairport/active should match the one configured in Shairport Sync’s MQTT settings.
+* The onValue and offValue correspond to the MQTT messages indicating whether Shairport Sync is active (1) or inactive (0).
+
+MQTTThing supports a wide range of characteristics, allowing additional topics from Shairport Sync or other devices to be represented in HomeKit as different accessory types (e.g., switches, lights, or sensors) in a similar manner.
