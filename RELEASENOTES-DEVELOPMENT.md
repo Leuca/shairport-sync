@@ -1,13 +1,18 @@
-Version TBA
+Version 4.3.6-dev-24-g015a5829
 ==
-Show how to use MQTTThing with Homebridge to represent Shairport Sync’s ‘active’ status. Thanks to [keefar](https://github.com/keefar) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1955). 
+**MQTT Documentation Addition**
+
+Show how to use [MQTTThing](https://github.com/arachnetech/homebridge-mqttthing#readme) with [Homebridge](https://homebridge.io/) to represent Shairport Sync’s `active` status. Thanks to [keefar](https://github.com/keefar) for the [PR](https://github.com/mikebrady/shairport-sync/pull/1955). 
 
 Version 4.3.6-dev-19-g39781ece
 ==
-Fix a typo in the consiguration file. Many thanks to [Justin](https://github.com/OptimoSupreme).
+**Documentation Fix**
+
+Fix a typo in the configuration file. Many thanks to [Justin](https://github.com/OptimoSupreme).
 
 Version 4.3.6-dev-17-gce73230e
 ==
+**Documentation Fix**
 
 Correct and clarify the [statistics documentation](https://github.com/mikebrady/shairport-sync/blob/master/ADVANCED%20TOPICS/Statistics.md).
 1. The descriptions of Net Sync PPM and All Sync PPM were partly swapped -- this has been corrected.
@@ -79,7 +84,7 @@ Version 4.3.5-dev-29-g17b134b0
 Version 4.3.5-dev-27-g8e6bd06c
 ==
 **PipeWire Enhancement**
-* Until now, the stream in the PipeWire backend remained permanently active. This meant that external progrmas could not tell when audio was really playing or not. Now the stream will go inactive (i.e. "paused") when play is stopped and active when play resumes.
+* Until now, the stream in the PipeWire backend remained permanently active. This meant that external programs could not tell when audio was really playing or not. Now the stream will go inactive (i.e. "paused") when play is stopped and active when play resumes.
   Note that in AirPlay 2, play often stops momentarily between tracks, and so there will be momentary changes from active to inactive and back to active again in the PipeWire backend. This may change as the backend improves. Thanks to [Nemo157](https://github.com/Nemo157) for the Idea: https://github.com/mikebrady/shairport-sync/discussions/1889.
   
 Version 4.3.5-dev-23-g1687b2a4
