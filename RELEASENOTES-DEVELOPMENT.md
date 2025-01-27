@@ -1,4 +1,8 @@
-Version 4.3.6-dev-24-g015a5829
+Version 4.3.7-dev
+==
+* This is effectively Version 4.3.6-dev-24-g015a5829, which is also effectively Version 4.3.6.
+
+Version 4.3.6-dev-24-g015a5829 
 ==
 **MQTT Documentation Addition**
 
