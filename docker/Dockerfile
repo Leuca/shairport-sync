@@ -117,7 +117,8 @@ RUN apk -U add \
         mandoc \
         mosquitto \
         popt \
-        soxr && \
+        soxr \
+        curl && \
     rm -rfv /lib/apk/db/* && \
     rm -rfv /etc/avahi/services/*.service && \
     addgroup shairport-sync && \

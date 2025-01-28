@@ -1,3 +1,5 @@
+ARG SHAIRPORT_SYNC_BRANCH=.
+
 FROM alpine:3.17 AS builder
 
 # Classic (aka AirPlay 1) Build
@@ -71,7 +73,8 @@ RUN apk -U add \
         mbedtls \
         mosquitto \
         popt \
-        soxr
+        soxr \
+        curl
 
 # Copy build files.
 COPY --from=builder /shairport-sync/build/install/usr/local/bin/shairport-sync /usr/local/bin/shairport-sync

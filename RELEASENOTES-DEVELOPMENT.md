@@ -1,3 +1,9 @@
+Version 4.3.7-dev-3-g802058fe
+==
+**Docker Enhancement**
+
+* Add `curl` to the Docker images to facilitate automations. Thanks to [ironcrafter54](https://github.com/ironcrafter54) for the [suggestion](https://github.com/mikebrady/shairport-sync/discussions/1960).
+
 Version 4.3.7-dev
 ==
 * This is effectively Version 4.3.6-dev-24-g015a5829, which is also effectively Version 4.3.6.
