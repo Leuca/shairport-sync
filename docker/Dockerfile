@@ -1,7 +1,7 @@
 ARG NQPTP_BRANCH=main
 ARG SHAIRPORT_SYNC_BRANCH=.
 
-FROM alpine:3.17 AS builder
+FROM alpine:3.20 AS builder
 
 RUN apk -U add \
         alsa-lib-dev \
@@ -32,7 +32,7 @@ RUN git clone --depth=1 https://github.com/mikebrady/alac
 WORKDIR /alac
 RUN autoreconf -i
 RUN ./configure
-RUN make
+RUN make -j $(nproc)
 RUN make install
 WORKDIR /
 ##### ALAC END #####
@@ -44,7 +44,7 @@ RUN git clone --depth=1 -b "$NQPTP_BRANCH" https://github.com/mikebrady/nqptp
 WORKDIR /nqptp
 RUN autoreconf -i
 RUN ./configure
-RUN make
+RUN make -j $(nproc)
 WORKDIR /
 ##### NQPTP END #####
 
@@ -90,7 +90,7 @@ COPY --from=shairport-sync /shairport-sync/build/install/etc/dbus-1/system.d/sha
 ##### END BUILD FILES #####
 
 # Shairport Sync Runtime System
-FROM crazymax/alpine-s6:3.17-3.1.1.2
+FROM crazymax/alpine-s6:3.20-3.2.0.2
 
 ENV S6_CMD_WAIT_FOR_SERVICES=1
 ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
@@ -108,7 +108,7 @@ RUN apk -U add \
         libgcrypt \
         libplist \
         libpulse \
-        libressl3.6-libcrypto \
+        libressl3.8-libcrypto \
         libsndfile \
         libsodium \
         libuuid \
@@ -118,8 +118,10 @@ RUN apk -U add \
         mosquitto \
         popt \
         soxr \
-        curl && \
-    rm -rfv /lib/apk/db/* && \
+        curl \
+        dhclient
+
+RUN rm -rfv /lib/apk/db/* && \
     rm -rfv /etc/avahi/services/*.service && \
     addgroup shairport-sync && \
     adduser -D shairport-sync -G shairport-sync && \
