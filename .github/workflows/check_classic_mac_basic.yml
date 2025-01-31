@@ -13,7 +13,7 @@ jobs:
     runs-on: macos-13
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4.2.2
     - name: Install Dependencies
       run: |
         brew install automake
