@@ -20,13 +20,23 @@ Remove it as follows:
 ```
 # rm /usr/local/bin/shairport-sync
 ```
-Do this until no more copies of `shairport-sync` are found.
+Do this until no more copies of `shairport-sync` are found. Shairport Sync could also be found in `/usr/bin/shairport-sync` or elsewhere.
+#### Remove Old Configuration Files
+If you want to preserve any configuration settings you have made, you should make a note of them and then delete the configuration file.
+This is suggested because there may be new configuration options available, which will be present but disabled in the
+updated configuration file that will be installed.
+You can then apply your previous settings to the updated configuration file.
+
+The configuration file is typically at `/etc/shairport-sync.conf` or `/usr/local/etc/shairport-sync.conf`.
+
 #### Remove Old Service Files
 You should also remove any of the following service files that may be present:
 * `/etc/systemd/system/shairport-sync.service`
 * `/etc/systemd/user/shairport-sync.service`
 * `/lib/systemd/system/shairport-sync.service`
 * `/lib/systemd/user/shairport-sync.service`
+* `/etc/dbus-1/system.d/shairport-sync-dbus.conf`
+* `/etc/dbus-1/system.d/shairport-sync-mpris.conf`
 * `/etc/init.d/shairport-sync`
 * `~/.config/systemd/user/shairport-sync.service`
   
@@ -34,7 +44,7 @@ New service files will be installed if necessary at the `# make install` stage.
 
 (In FreeBSD, there is no need to remove the file at `/usr/local/etc/rc.d/shairport-sync` – it's always replaced in the `make install` step.)
 #### Reboot after Cleaning Up
-If you removed any installations of Shairport Sync or any of its service files in the last two steps, you should reboot.
+If you removed any installations of Shairport Sync or any of its service or configuration files in the last three steps, you should reboot.
 
 ## 2. Get Tools and Libraries
 Okay, now let's get the tools and libraries for building and installing Shairport Sync (and NQPTP).
@@ -63,7 +73,7 @@ Building on Ubuntu 24.10, and possibly other distributions, requires `systemd-de
 ```
 
 ### Fedora (Fedora 40)
-For AirPlay 2 operation, _before you install the libraries_, please ensure the you have [enabled](https://docs.fedoraproject.org/en-US/quick-docs/rpmfusion-setup) RPM Fusion software repositories to the "Nonfree" level. If this is not done, the FFmpeg libraries will lack a suitable AAC decoder, preventing Shairport Sync from working in AirPlay 2 mode. 
+Important: to get the correct version of FFmpeg, _before you install the libraries_, please ensure the you have [enabled](https://docs.fedoraproject.org/en-US/quick-docs/rpmfusion-setup) RPM Fusion software repositories to the "Nonfree" level. If this is not done, the FFmpeg libraries will lack a suitable AAC decoder, preventing Shairport Sync from working in AirPlay 2 mode. 
 ```
 # yum update
 # yum install --allowerasing make automake gcc gcc-c++ \
