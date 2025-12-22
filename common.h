@@ -301,6 +301,8 @@ typedef struct {
   double audio_backend_buffer_interpolation_threshold_in_seconds; // below this, soxr interpolation
                                                                   // will not occur -- it'll be
                                                                   // basic interpolation instead.
+  double audio_decoded_buffer_desired_length;    // the length of the buffer of fully decoded audio
+                                                 // prior to being sent to the output device
   double disable_standby_mode_silence_threshold; // below this, silence will be added to the output
                                                  // buffer
   double disable_standby_mode_silence_scan_interval; // check the threshold this often
@@ -545,7 +547,7 @@ uint64_t get_absolute_time_in_ns(void);  // monotonic_raw or monotonic
 uint64_t get_monotonic_time_in_ns(void); // NTP-disciplined
 
 // time at startup for debugging timing
-extern uint64_t ns_time_at_startup, ns_time_at_last_debug_message;
+// extern uint64_t ns_time_at_startup, ns_time_at_last_debug_message;
 
 // this is for reading an unsigned 32 bit number, such as an RTP timestamp
 

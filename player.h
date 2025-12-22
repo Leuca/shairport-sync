@@ -424,6 +424,8 @@ typedef struct {
   pthread_t rtp_realtime_audio_thread;
   pthread_t rtp_buffered_audio_thread;
 
+  int ap2_event_receiver_exited;
+
   int last_anchor_info_is_valid;
   uint32_t last_anchor_rtptime;
   uint64_t last_anchor_local_time;
@@ -464,8 +466,8 @@ typedef struct {
   unsigned char *session_key; // needs to be free'd at the end
   char *ap2_client_name;      // needs to be free'd at teardown phase 2
   uint64_t frames_packet;
-  uint64_t type;
-  uint64_t networkTimeTimelineID;   // the clock ID used by the player
+  uint64_t type;                  // 96 (Realtime Audio), 103 (Buffered Audio), 130 (Remote Control)
+  uint64_t networkTimeTimelineID; // the clock ID used by the player
   uint8_t groupContainsGroupLeader; // information coming from the SETUP
   uint64_t compressionType;
 #endif
@@ -584,8 +586,7 @@ extern int statistics_row; // will be reset to zero when debug level changes or 
 
 void reset_buffer(rtsp_conn_info *conn);
 
-void get_audio_buffer_size_and_occupancy(unsigned int *size, unsigned int *occupancy,
-                                         rtsp_conn_info *conn);
+size_t get_audio_buffer_occupancy(rtsp_conn_info *conn);
 
 int32_t modulo_32_offset(uint32_t from, uint32_t to);
 
@@ -598,6 +599,9 @@ void player_volume(double f, rtsp_conn_info *conn);
 void player_volume_without_notification(double f, rtsp_conn_info *conn);
 void player_flush(uint32_t timestamp, rtsp_conn_info *conn);
 // void player_full_flush(rtsp_conn_info *conn);
+
+seq_t get_revised_seqno(rtsp_conn_info *conn, uint32_t timestamp);
+void clear_buffers_from(rtsp_conn_info *conn, seq_t from_here);
 uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp, uint8_t *data,
                            size_t len, int mute, int32_t timestamp_gap, rtsp_conn_info *conn);
 int64_t monotonic_timestamp(uint32_t timestamp,
@@ -612,6 +616,8 @@ double suggested_volume(rtsp_conn_info *conn); // volume suggested for the conne
 
 const char *get_ssrc_name(ssrc_t ssrc);
 size_t get_ssrc_block_length(ssrc_t ssrc);
+
+const char *get_category_string(airplay_stream_c cat);
 
 int ssrc_is_recognised(ssrc_t ssrc);
 int ssrc_is_aac(ssrc_t ssrc); // used to decide if a mute might be needed (AAC only)

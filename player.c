@@ -328,9 +328,9 @@ static void free_audio_buffers(rtsp_conn_info *conn) {
 int first_possibly_missing_frame = -1;
 
 void reset_buffer(rtsp_conn_info *conn) {
-  debug_mutex_lock(&conn->ab_mutex, 30000, 0);
+  pthread_cleanup_debug_mutex_lock(&conn->ab_mutex, 30000, 0);
   ab_resync(conn);
-  debug_mutex_unlock(&conn->ab_mutex, 0);
+  pthread_cleanup_pop(1);
 #if CONFIG_FFMPEG
   avflush(conn);
 #endif
@@ -343,19 +343,42 @@ void reset_buffer(rtsp_conn_info *conn) {
 // returns the total number of blocks and the number occupied, but not their size,
 // because the size is determined by the block size sent
 
-void get_audio_buffer_size_and_occupancy(unsigned int *size, unsigned int *occupancy,
-                                         rtsp_conn_info *conn) {
-  debug_mutex_lock(&conn->ab_mutex, 30000, 0);
-  *size = BUFFER_FRAMES;
+size_t get_audio_buffer_occupancy(rtsp_conn_info *conn) {
+  size_t response = 0;
+  pthread_cleanup_debug_mutex_lock(&conn->ab_mutex, 30000, 0);
   if (conn->ab_synced) {
     int16_t occ =
         conn->ab_write - conn->ab_read; // will be zero or positive if read and write are within
                                         // 2^15 of each other and write is at or after read
-    *occupancy = occ;
-  } else {
-    *occupancy = 0;
+    response = occ;
   }
-  debug_mutex_unlock(&conn->ab_mutex, 0);
+  pthread_cleanup_pop(1);
+  return response;
+}
+
+const char *get_category_string(airplay_stream_c cat) {
+  char *category;
+  switch (cat) {
+  case unspecified_stream_category:
+    category = "unspecified stream";
+    break;
+  case ptp_stream:
+    category = "PTP stream";
+    break;
+  case ntp_stream:
+    category = "NTP stream";
+    break;
+  case remote_control_stream:
+    category = "Remote Control stream";
+    break;
+  case classic_airplay_stream:
+    category = "Classic AirPlay stream";
+    break;
+  default:
+    category = "Unexpected stream code";
+    break;
+  }
+  return category;
 }
 
 #ifdef CONFIG_FFMPEG
@@ -403,7 +426,7 @@ void clear_decoding_chain(rtsp_conn_info *conn) {
     pthread_cleanup_pop(1); // avcodec_open2_cleanup_handler
     pthread_cleanup_pop(1); // deallocate the malloc
     pthread_cleanup_pop(1); // avcodec_alloc_context3_cleanup_handler
-    conn->incoming_ssrc = 0;
+    conn->incoming_ssrc = SSRC_NONE;
   }
 }
 
@@ -1009,7 +1032,7 @@ void prepare_decoding_chain(rtsp_conn_info *conn, ssrc_t ssrc) {
 
     if ((config.statistics_requested != 0) && (ssrc != SSRC_NONE) &&
         (conn->incoming_ssrc != SSRC_NONE)) {
-      debug(1, "Connection %d: incoming audio switching to \"%s\".", conn->connection_number,
+      debug(2, "Connection %d: incoming audio switching to \"%s\".", conn->connection_number,
             get_ssrc_name(ssrc));
 #ifdef CONFIG_METADATA
       send_ssnc_metadata('sdsc', get_ssrc_name(ssrc), strlen(get_ssrc_name(ssrc)), 1);
@@ -1347,6 +1370,51 @@ int openssl_aes_decrypt_cbc(unsigned char *ciphertext, int ciphertext_len, unsig
 }
 #endif
 
+#ifdef CONFIG_AIRPLAY_2
+
+#ifdef CONFIG_AIRPLAY_2
+// This is a big dirty hack to try to accommodate packets that come in in sequence but are timed to
+// be earlier that what went before them. This happens when the feed is switching from AAC to ALAC.
+// So basically we will look back through the buffers in the queue until we find the last buffer
+// that predates the incoming one. We will make the subsequent buffer the revised_seqno. If we can't
+// find an older buffer, that means we can't go back far enough to find an older buffer and then the
+// ab_read buffer becomes the revised_seqno.
+seq_t get_revised_seqno(rtsp_conn_info *conn, uint32_t timestamp) {
+  // go back through the buffers to find the first buffer following a buffer that predates
+  // the given timestamp, if any.
+  seq_t revised_seqno = conn->ab_write;
+  pthread_cleanup_debug_mutex_lock(&conn->ab_mutex, 30000, 0);
+  int older_seqno_found = 0;
+  while ((older_seqno_found == 0) && (revised_seqno != conn->ab_read)) {
+    revised_seqno--;
+    abuf_t *tbuf = conn->audio_buffer + BUFIDX(revised_seqno);
+    if (tbuf->ready != 0) {
+      int32_t timestamp_difference = timestamp - tbuf->timestamp;
+      if (timestamp_difference >= 0) {
+        older_seqno_found = 1;
+      }
+    }
+  }
+  if (older_seqno_found)
+    revised_seqno++;
+
+  pthread_cleanup_pop(1);
+  return revised_seqno;
+}
+
+void clear_buffers_from(rtsp_conn_info *conn, seq_t from_here) {
+  seq_t bi = from_here;
+  while (bi != conn->ab_write) {
+    abuf_t *tbuf = conn->audio_buffer + BUFIDX(bi);
+    free_audio_buffer_payload(tbuf);
+    bi++;
+  }
+}
+
+#endif
+
+#endif
+
 #ifdef CONFIG_FFMPEG
 uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp, uint8_t *data,
                            size_t len, int mute, int32_t timestamp_gap, rtsp_conn_info *conn) {
@@ -1361,7 +1429,7 @@ uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp
   // The timestamp_gap is the difference between the timestamp and the expected timestamp.
   // It should normally be zero.
 
-  // It can be decoded by the Hammerton or Apple ALAC decoders, or my the FFmpeg decoder.
+  // It can be decoded by the Hammerton or Apple ALAC decoders, or by the FFmpeg decoder.
 
   // The SSRC signifies the encoding used for that block of audio.
   // It is used to select the type of decoding to be done by the FFMPEG-based
@@ -1387,7 +1455,7 @@ uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp
     debug_mutex_unlock(&conn->flush_mutex, 3);
   }
 
-  debug_mutex_lock(&conn->ab_mutex, 30000, 0);
+  pthread_cleanup_debug_mutex_lock(&conn->ab_mutex, 30000, 0);
   uint64_t time_now = get_absolute_time_in_ns();
   conn->packet_count++;
   conn->packet_count_since_flush++;
@@ -1499,7 +1567,7 @@ uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp
         } else if (config.decoder_in_use == 1 << decoder_ffmpeg_alac) {
 #ifdef CONFIG_FFMPEG
           prepare_decoding_chain(conn, ALAC_44100_S16_2);
-          if (len > 8) {
+          // if (len > 8) {
             abuf->avframe = block_to_avframe(conn, data_to_use, len);
             abuf->ssrc = ALAC_44100_S16_2;
             if (abuf->avframe) {
@@ -1513,12 +1581,14 @@ uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp
               av_frame_free(&abuf->avframe);
               abuf->avframe = NULL;
             }
-          } else {
-            debug(1,
-                  "Unrecognised audio packet of length %u -- replacing with %u frames of silence.",
-                  len, conn->frames_per_packet);
-            abuf->length = conn->frames_per_packet;
-            abuf->avframe = NULL;
+          // } else {
+        if (len <= 8) {
+          debug(1,
+                "Using the FFMPEG ALAC_44100_S16_2 decoder, a short audio packet %u, rtptime %u, of length %u has been decoded but not discarded. Contents follow:", seqno,
+                actual_timestamp, len);
+          debug_print_buffer(1, data, len);
+            // abuf->length = conn->frames_per_packet;
+            // abuf->avframe = NULL;
           }
 #else
           debug(1, "FFMPEG support has not been built into this version Shairport Sync!");
@@ -1550,7 +1620,7 @@ uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp
 
         prepare_decoding_chain(conn, ssrc); // dynamically set the decoding environment
 
-        if (len > 8) {
+        // if (len > 8) {
           abuf->avframe = block_to_avframe(conn, data, len);
           abuf->ssrc = ssrc; // tag the avframe with its specific SSRC
           if (abuf->avframe) {
@@ -1563,13 +1633,14 @@ uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp
             av_frame_free(&abuf->avframe);
             abuf->avframe = NULL;
           }
-        } else {
+        //} else {
+        if (len <= 8) {
           debug(1,
-                "Unrecognised audio packet %u, rtptime %u, of length %u. Contents follow:", seqno,
+                "Using an FFMPEG decoder, a short audio packet %u, rtptime %u, of length %u has been decoded but not discarded. Contents follow:", seqno,
                 actual_timestamp, len);
           debug_print_buffer(1, data, len);
-          abuf->length = 0;
-          abuf->avframe = NULL;
+          // abuf->length = 0;
+          // abuf->avframe = NULL;
         }
         abuf->ready = 1;
         abuf->status = 0; // signifying that it was received
@@ -1687,9 +1758,9 @@ uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp
             debug(3, "request resend of %d packets starting at seqno %u.", missing_frame_run_count,
                   start_of_missing_frame_run);
           if (config.disable_resend_requests == 0) {
-            debug_mutex_unlock(&conn->ab_mutex, 3);
+            // debug_mutex_unlock(&conn->ab_mutex, 3);
             rtp_request_resend(start_of_missing_frame_run, missing_frame_run_count, conn);
-            debug_mutex_lock(&conn->ab_mutex, 20000, 1);
+            // debug_mutex_lock(&conn->ab_mutex, 20000, 1);
             conn->resend_requests++;
           }
           start_of_missing_frame_run = -1;
@@ -1700,7 +1771,8 @@ uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp
         first_possibly_missing_frame = conn->ab_write;
     }
   }
-  debug_mutex_unlock(&conn->ab_mutex, 0);
+  pthread_cleanup_pop(1);
+  // debug_mutex_unlock(&conn->ab_mutex, 0);
   return input_packets_used;
 }
 
@@ -1925,9 +1997,9 @@ static inline void process_sample(int32_t sample, char **outp, sps_format_t form
   *outp += result;
 }
 
-void buffer_get_frame_cleanup_handler(void *arg) {
-  rtsp_conn_info *conn = (rtsp_conn_info *)arg;
-  debug_mutex_unlock(&conn->ab_mutex, 0);
+void buffer_get_frame_cleanup_handler(__attribute__((unused)) void *arg) {
+  // rtsp_conn_info *conn = (rtsp_conn_info *)arg;
+  // debug_mutex_unlock(&conn->ab_mutex, 0);
 }
 
 // get the next frame, when available. return 0 if underrun/stream reset.
@@ -1947,7 +2019,7 @@ static abuf_t *buffer_get_frame(rtsp_conn_info *conn, int resync_requested) {
   abuf_t *curframe = NULL;
   int notified_buffer_empty = 0; // diagnostic only
 
-  debug_mutex_lock(&conn->ab_mutex, 30000, 0);
+  pthread_cleanup_debug_mutex_lock(&conn->ab_mutex, 30000, 0);
 
   int wait;
   long dac_delay = 0; // long because alsa returns a long
@@ -2675,6 +2747,8 @@ static abuf_t *buffer_get_frame(rtsp_conn_info *conn, int resync_requested) {
     curframe->ready = 0;
   }
   conn->ab_read++;
+
+  pthread_cleanup_pop(1); // unlock the ab_mutex
   pthread_cleanup_pop(1); // buffer_get_frame_cleanup_handler
   // debug(1, "Release frame %u.", curframe->timestamp);
 #ifdef CONFIG_FFMPEG
@@ -2700,7 +2774,7 @@ static abuf_t *buffer_get_frame(rtsp_conn_info *conn, int resync_requested) {
           debug(2, "setting up software resampler for %s for the first time.",
                 get_ssrc_name(curframe->ssrc));
         } else {
-          debug(2, "SSRC has changed from %s to %s.", get_ssrc_name(conn->resampler_ssrc),
+          debug(1, "Connection %d: queued audio buffers switching to \"%s\".", conn->connection_number,
                 get_ssrc_name(curframe->ssrc));
           clear_software_resampler(conn);
           // ask the backend if it can give us its best choice for an ffmpeg configuration:
@@ -3155,12 +3229,6 @@ int stuff_buffer_soxr_32(int32_t *inptr, int length, sps_format_t l_output_forma
 }
 #endif
 
-void player_thread_initial_cleanup_handler(__attribute__((unused)) void *arg) {
-  rtsp_conn_info *conn = (rtsp_conn_info *)arg;
-  debug(3, "Connection %d: player thread main loop exit via player_thread_initial_cleanup_handler.",
-        conn->connection_number);
-}
-
 char line_of_stats[1024];
 int statistics_row; // statistics_line 0 means print the headings; anything else 1 means print the
                     // values. Set to 0 the first time out.
@@ -3187,7 +3255,7 @@ int ap2_buffered_nodelay_stream_statistics_print_profile[] = {0, 0, 0, 0, 0, 0, 
 // clang-format on
 
 void statistics_item(const char *heading, const char *format, ...) {
-  if (((statistics_print_profile[statistics_column] == 1) && (debuglev != 0)) ||
+  if (((statistics_print_profile[statistics_column] == 1) && (debug_level() != 0)) ||
       (statistics_print_profile[statistics_column] == 2)) { // include this column?
     if (was_a_previous_column != 0) {
       if (statistics_row == 0)
@@ -3286,7 +3354,6 @@ void player_thread_cleanup_handler(void *arg) {
 #ifdef CONFIG_AIRPLAY_2
   if (conn->airplay_type == ap_2) {
     debug(2, "Cancelling AP2 timing, control and audio threads...");
-
     if (conn->airplay_stream_type == realtime_stream) {
       debug(2, "Connection %d: Delete Realtime Audio Stream thread", conn->connection_number);
       pthread_cancel(conn->rtp_realtime_audio_thread);
@@ -3294,12 +3361,14 @@ void player_thread_cleanup_handler(void *arg) {
 
     } else if (conn->airplay_stream_type == buffered_stream) {
 
-      debug(2,
+      debug(3,
             "Connection %d: Delete Buffered Audio Stream thread by player_thread_cleanup_handler",
             conn->connection_number);
       pthread_cancel(conn->rtp_buffered_audio_thread);
       pthread_join(conn->rtp_buffered_audio_thread, NULL);
-
+      debug(3,
+            "Connection %d: Deleted Buffered Audio Stream thread by player_thread_cleanup_handler",
+            conn->connection_number);
     } else {
       die("Unrecognised Stream Type");
     }
@@ -3307,7 +3376,6 @@ void player_thread_cleanup_handler(void *arg) {
     debug(2, "Connection %d: Delete AirPlay 2 Control thread", conn->connection_number);
     pthread_cancel(conn->rtp_ap2_control_thread);
     pthread_join(conn->rtp_ap2_control_thread, NULL);
-
   } else {
     debug(2, "Cancelling AP1-compatible timing, control and audio threads...");
 #else
@@ -3328,10 +3396,10 @@ void player_thread_cleanup_handler(void *arg) {
     debug(3, "Join audio thread.");
     pthread_join(conn->rtp_audio_thread, NULL);
     debug(3, "Audio thread terminated.");
+
 #ifdef CONFIG_AIRPLAY_2
   }
-  // ptp_send_control_message_string("T"); // remove all timing peers to force the master to 0
-  // reset_anchor_info(conn);
+  ptp_send_control_message_string("E");
 #endif
 
   if (conn->outbuf) {
@@ -3343,11 +3411,6 @@ void player_thread_cleanup_handler(void *arg) {
     conn->tbuf = NULL;
   }
 
-  // if (conn->statistics) {
-  //   free(conn->statistics);
-  //   conn->statistics = NULL;
-  // }
-
   free_audio_buffers(conn);
   if (conn->stream.type == ast_apple_lossless) {
 #ifdef CONFIG_APPLE_ALAC
@@ -3355,15 +3418,16 @@ void player_thread_cleanup_handler(void *arg) {
       apple_alac_terminate();
     }
 #endif
+
 #ifdef CONFIG_HAMMERTON
     if (config.decoder_in_use == 1 << decoder_hammerton) {
       alac_free(conn->decoder_info);
     }
 #endif
   }
-  // no need to flush the FFMPEG decoder...
 
   conn->rtp_running = 0;
+
   pthread_setcancelstate(oldState, NULL);
   debug(2, "Connection %d: player terminated.", conn->connection_number);
 }
@@ -3390,7 +3454,6 @@ void *player_thread_func(void *arg) {
       0; // initialised to avoid a "possibly uninitialised" warning
   int previous_frames_played_valid = 0;
 
-  // pthread_cleanup_push(player_thread_initial_cleanup_handler, arg);
   conn->latency_warning_issued =
       0; // be permitted to generate a warning each time a play is attempted
   conn->packet_count = 0;
@@ -5224,9 +5287,12 @@ int player_stop(rtsp_conn_info *conn) {
   pthread_cleanup_pop(1); // release the player_create_delete_mutex
   if (response == 0) {    // if the thread was just stopped and deleted...
     conn->is_playing = 0;
+/*
+// this is done in the player cleanup handler
 #ifdef CONFIG_AIRPLAY_2
     ptp_send_control_message_string("E"); // signify play is "E"nding
 #endif
+*/
 #ifdef CONFIG_METADATA
     send_ssnc_metadata('pend', NULL, 0, 1); // contains cancellation points
 #endif

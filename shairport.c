@@ -44,6 +44,10 @@
 
 #include "config.h"
 
+#ifdef CONFIG_FFMPEG
+#include <libavutil/log.h>
+#endif
+
 #ifdef CONFIG_AIRPLAY_2
 #include "ptp-utilities.h"
 #include <gcrypt.h>
@@ -422,11 +426,10 @@ int parse_options(int argc, char **argv) {
   poptSetOtherOptionHelp(optCon, "[OPTIONS]* ");
 
   /* Now do options processing just to get a debug log destination and level */
-  debuglev = 0;
   while ((c = poptGetNextOpt(optCon)) >= 0) {
     switch (c) {
     case 'v':
-      debuglev++;
+      increase_debug_level();
       break;
     case 'u':
       inform("Warning: the option -u is no longer needed and is deprecated. Debug and statistics "
@@ -807,7 +810,7 @@ int parse_options(int argc, char **argv) {
         warn("The \"general\" \"log_verbosity\" setting is deprecated. Please use the "
              "\"diagnostics\" \"log_verbosity\" setting instead.");
         if ((value >= 0) && (value <= 3))
-          debuglev = value;
+          set_debug_level(value);
         else
           die("Invalid log verbosity setting option choice \"%d\". It should be between 0 and 3, "
               "inclusive.",
@@ -817,7 +820,7 @@ int parse_options(int argc, char **argv) {
       /* Get the verbosity setting. */
       if (config_lookup_int(config.cfg, "diagnostics.log_verbosity", &value)) {
         if ((value >= 0) && (value <= 3))
-          debuglev = value;
+          set_debug_level(value);
         else
           die("Invalid diagnostics log_verbosity setting option choice \"%d\". It should be "
               "between 0 and 3, "
@@ -1708,7 +1711,7 @@ int parse_options(int argc, char **argv) {
 #endif
 
   if (tdebuglev != 0)
-    debuglev = tdebuglev;
+    set_debug_level(tdebuglev);
 
   // now set the initial volume to the default volume
   config.airplay_volume =
@@ -1839,7 +1842,7 @@ void exit_rtsp_listener() {
     pthread_cancel(rtsp_listener_thread);
     pthread_join(rtsp_listener_thread, NULL); // not sure you need this
   }
-  debug(3, "exit_rtsp_listener ends");
+  debug(2, "exit_rtsp_listener ends");
 }
 
 void exit_function() {
@@ -2268,6 +2271,10 @@ const char *av_channel_layout_name(uint64_t channel_layout) {
 #endif
 
 int main(int argc, char **argv) {
+  // initialise debug messages stuff -- level 1, no elapsed time, relative time, file and line
+  // the debug level will be reset to zero if no debug level is set
+  // debug_init(int level, int show_elapsed_time, int show_relative_time, int show_file_and_line)
+  debug_init(1, 0, 1, 1);
   memset(&config, 0, sizeof(config)); // also clears all strings, BTW
   /* Check if we are called with -V or --version parameter */
   if (argc >= 2 && ((strcmp(argv[1], "-V") == 0) || (strcmp(argv[1], "--version") == 0))) {
@@ -2298,7 +2305,7 @@ int main(int argc, char **argv) {
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
   avcodec_register_all();
 #endif
-  if (debuglev == 0)
+  if (debug_level() == 0)
     av_log_set_level(AV_LOG_ERROR);
   else
     av_log_set_level(AV_LOG_VERBOSE);
@@ -2321,8 +2328,6 @@ int main(int argc, char **argv) {
   pid = getpid();
   config.log_fd = -1;
   conns = NULL; // no connections active
-  ns_time_at_startup = get_absolute_time_in_ns();
-  ns_time_at_last_debug_message = ns_time_at_startup;
 
 #ifdef CONFIG_LIBDAEMON
   daemon_set_verbosity(LOG_DEBUG);
@@ -2402,6 +2407,7 @@ int main(int argc, char **argv) {
   set_requested_connection_state_to_output(
       1); // we expect to be able to connect to the output device
   config.audio_backend_buffer_desired_length = 0.15; // seconds
+  config.audio_decoded_buffer_desired_length = 0.75; // seconds
   config.udp_port_base = 6001;
   config.udp_port_range = 10;
 
@@ -2698,7 +2704,7 @@ int main(int argc, char **argv) {
 
 #endif
 
-  debug(2, "Log Verbosity is %d.", debuglev);
+  debug(2, "Log Verbosity is %d.", debug_level());
 
   config.output = audio_get_output(config.output_name);
   if (!config.output) {
@@ -2710,6 +2716,8 @@ int main(int argc, char **argv) {
   config.output->init(argc - audio_arg, argv + audio_arg);
 
 #ifdef CONFIG_FFMPEG
+  if (debug_level() <= 1) // keep FFmpeg stuff quiet unless verbosity is 2 or more
+    av_log_set_level(AV_LOG_QUIET);
 
 #if LIBAVUTIL_VERSION_MAJOR >= 57
 
