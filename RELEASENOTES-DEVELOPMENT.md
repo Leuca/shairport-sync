@@ -1,3 +1,13 @@
+Version 5.0-dev-161-g5b3659c2
+==
+**Bug Fix**
+* Fix an MQTT warning and simplify building the `systemd` startup script. The warning occured if Shairport Sync was built with MQTT support. For that case, the startup script omitted stating that the `mosquitto` service was required and had to be active before starting Shairport Sync.
+
+  Thanks to [hvilleneuve29](https://github.com/hvilleneuve29) for the [PR](https://github.com/mikebrady/shairport-sync/pull/2137).
+
+**Dependabot Update**
+* A Dependabot update to some image building tools was added.
+
 Version 5.0-dev-155-g45063d10
 ==
 **Bug Fix**
@@ -25,7 +35,7 @@ Version 5.0-dev-142-gfcacc4e5
   * Modified and greatly simplified the `TEARDOWN` handling in AP2 mode.
   * Allowed threads to 'naturally' terminate when ports are closed by the client.
   * Improved clearing of flush requests in new play sessions.
-  * Added, but disabled, code to removed previously decoded buffers of data from the player if replacement buffers come in later. (This happens when input changes from AAC to ALAC on the fly, and it's unclear whether this is an AirPlay 2 implementation bug or not.) It's unclear which buffers should have primacy -- the older ones or the newer ones -- so for simplicity new buffers that would replace buffers that are already decoded are simply dropped.
+  * Added, but disabled, code to remove previously decoded buffers of data from the player if replacement buffers come in later. (This happens when input changes from AAC to ALAC on the fly, and it's unclear whether this is an AirPlay 2 implementation bug or not.) It's unclear which buffers should have primacy -- the older ones or the newer ones -- so for simplicity new buffers that would replace buffers that are already decoded are simply dropped.
 
 
 Version 5.0-dev-106-gec0016fb
@@ -53,12 +63,12 @@ Version 5.0-dev-87-ge12a3ed7
 Version 5.0-dev-83-g38592252
 ==
 **Enhancements**
-* _Convolution Update._ The convolution system is now multithreaded and works on multichannel 48k and 44.1k audio.
-  * Multiple impulse response (IR) files can now be provided to the convolution system through a new setting: `convolution_ir_files` (the old setting: `convolution_ir_file` is now deprecated). When convolution starts, Shairport Sync will look for an IR file with a sample rate matching the input (44.1k or 48k) and channel count. If an exact match can not be found, it will look for a single-channel IR file with the matching rate. It will always choose the first match in the file list supplied with the `convolution_ir_files` setting or the `D-Bus` method.
+* _Convolution Update._ The convolution system is now multithreaded and works on stereo and multichannel audio at 48k and 44.1k.
+  * Multiple impulse response (IR) files can now be provided to the convolution system through a new setting: `convolution_ir_files` (the old setting: `convolution_ir_file` is now deprecated). When convolution starts, Shairport Sync will look for an IR file with a sample rate matching the input (44.1k or 48k) and channel count. If an exact match can not be found, it will start again and look for a single-channel IR file with the matching rate. It will always choose the first match in the file list supplied with the `convolution_ir_files` setting or the `D-Bus` method.
   * Multithreading of convolution processing is now possible -- use the `convolution_thread_pool_size` setting to set the number of threads to use during convolution. (Note: high levels of multicore operation can cause audible power supply noise on some systems, due to rapid power switching or frequency-ramping of CPU cores.)
   
   * The [HiFi-LoFi FFT convolver](https://github.com/HiFi-LoFi/FFTConvolver) has been updated to the latest available.
-* _Loudness Update._ The loudness code now works work multichannel 48k and 44.1k audio.
+* _Loudness Update._ The loudness code now works with stereo and multichannel audio at 48k and 44.1k.
 
 **Deprecations**
 * The Jack audio backend is deprecated and will be removed in the future. It seems to be very little used, and most of its functionality is now available through PipeWire. 
