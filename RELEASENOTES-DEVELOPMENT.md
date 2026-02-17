@@ -1,3 +1,16 @@
+Version 5.0-post-dev-13-g5893eabf
+==
+* The MQTT client in Shairport Sync has a Home-Assistant-specific configuration key called `object_id` used to define the entity's unique ID for HA. The term `object_id` has been deprecated by HA in favour of a new term: `defauly_entity_id`. This has now been added to Shairport Sync's MQTT client.
+   
+  The deprecated `object_id` term will be removed in a future release. Thanks to [Markus Reiter](https://github.com/reitermarkus) for the [PR](https://github.com/mikebrady/shairport-sync/pull/2148).
+
+Version 5.0-post-dev-10-g3888999d
+==
+* Remove requirement for the `mosquitto` service to be running when Shairport Sync is built with the `--with-mqtt-client` configuration flag. The service does not, in fact, need to be running in every case.
+This reverses a change made in [PR](https://github.com/mikebrady/shairport-sync/pull/2137) at [Version 5.0-dev-161](https://github.com/mikebrady/shairport-sync/blob/development/RELEASENOTES-DEVELOPMENT.md#version-50-dev-161-g5b3659c2).
+
+  Thanks to [David Crook](https://github.com/idcrook) for the [bug report](https://github.com/mikebrady/shairport-sync/issues/2150).
+
 Version 5.0-post-dev-6-gd32d5cb9
 ==
 * Fix handling of missing `const` type qualifier and some follow-on warnings. Thanks to [Rudi Heitbaum](https://github.com/heitbaum) for the [PR](https://github.com/mikebrady/shairport-sync/pull/2146).
