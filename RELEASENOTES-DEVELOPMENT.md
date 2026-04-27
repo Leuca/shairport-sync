@@ -1,3 +1,12 @@
+Version 5.0.5-dev-2-g2400aae4
+==
+This is effectively 5.0.4-dev-9-g68b6d4df.
+
+Version 5.0.4-dev-9-g68b6d4df
+==
+**Bug Fix**
+* Fixed missing configuration mapping parameter in PulseAudio backend initialisation. This bug would prevent the PulseAudio backend from initialising, preventing Shairport Sync from working.
+  
 Version 5.0.4-dev-5-g936b8387
 ==
 **New Features**
