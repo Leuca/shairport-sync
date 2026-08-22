@@ -98,7 +98,7 @@
 #endif
 
 #ifdef CONFIG_DBUS_INTERFACE
-#include "dbus-service.h"
+#include "dbus/dbus-service.h"
 #endif
 
 #ifdef CONFIG_MQTT
@@ -106,7 +106,7 @@
 #endif
 
 #ifdef CONFIG_MPRIS_INTERFACE
-#include "mpris-service.h"
+#include "dbus/mpris-service.h"
 #endif
 
 #ifdef CONFIG_LIBDAEMON
@@ -125,7 +125,8 @@
 #endif
 
 #ifdef CONFIG_CONVOLUTION
-#include <FFTConvolver/convolver.h>
+#include <sndfile.h>
+#include "FFTConvolver/convolver.h"
 #endif
 
 pid_t pid;
@@ -565,11 +566,20 @@ int parse_options(int argc, char **argv) {
 
   // config.srcvers = strdup(PACKAGE_VERSION);
   // config.srcvers = strdup("760.13.1");
-
+  // config.srcvers = strdup("940.23.1");
+  // config.srcvers = strdup("366.0");
+  // config.srcvers = strdup("950.7.1");
   config.srcvers = strdup("366.0");
 
   // config.osvers = strdup(VERSION);
   config.osvers = strdup("15.0");
+
+#ifdef CONFIG_AIRPLAY_2
+  config.volumeControlType = 3; // 0 in AP2 seems to mean don't show the volume controls on the
+                                // player. 0 -- 4. 3 seems normal.
+#endif
+
+  config.vv = 0;
 
   // make up a firmware version
 #ifdef CONFIG_USE_GIT_VERSION_STRING
@@ -1456,6 +1466,131 @@ int parse_options(int argc, char **argv) {
             config_error_file(&config_file_stuff), config_error_text(&config_file_stuff));
       }
     }
+
+#if defined(CONFIG_DBUS_INTERFACE)
+    /* Get the dbus service sbus setting. */
+    if (config_lookup_string(config.cfg, "general.dbus_service_bus", &str)) {
+      if (strcasecmp(str, "system") == 0)
+        config.dbus_service_bus_type = DBT_system;
+      else if (strcasecmp(str, "session") == 0)
+        config.dbus_service_bus_type = DBT_session;
+      else
+        die("Invalid dbus_service_bus option choice \"%s\". It should be \"system\" (default) or "
+            "\"session\"",
+            str);
+    }
+#endif
+
+#if defined(CONFIG_MPRIS_INTERFACE)
+    /* Get the mpris service sbus setting. */
+    if (config_lookup_string(config.cfg, "general.mpris_service_bus", &str)) {
+      if (strcasecmp(str, "system") == 0)
+        config.mpris_service_bus_type = DBT_system;
+      else if (strcasecmp(str, "session") == 0)
+        config.mpris_service_bus_type = DBT_session;
+      else
+        die("Invalid mpris_service_bus option choice \"%s\". It should be \"system\" (default) or "
+            "\"session\"",
+            str);
+    }
+#endif
+
+#ifdef CONFIG_MQTT
+    config_set_lookup_bool(config.cfg, "mqtt.enabled", &config.mqtt_enabled);
+    if (config.mqtt_enabled && !config.metadata_enabled) {
+      die("You need to have metadata enabled in order to use mqtt");
+    }
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.hostname", &str)) {
+      config.mqtt_hostname = (char *)str;
+      // TODO: Document that, if this is false, whole mqtt func is disabled
+    }
+    config.mqtt_port = 1883;
+    if (config_lookup_int(config.cfg, "mqtt.port", &value)) {
+      if ((value < 0) || (value > 65535))
+        die("Invalid mqtt port number  \"%d\". It should be between 0 and 65535, default is 1883",
+            value);
+      else
+        config.mqtt_port = value;
+    }
+
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.username", &str)) {
+      config.mqtt_username = (char *)str;
+    }
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.password", &str)) {
+      config.mqtt_password = (char *)str;
+    }
+    int capath = 0;
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.capath", &str)) {
+      config.mqtt_capath = (char *)str;
+      capath = 1;
+    }
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.cafile", &str)) {
+      if (capath)
+        die("Supply either mqtt cafile or mqtt capath -- you have supplied both!");
+      config.mqtt_cafile = (char *)str;
+    }
+    int certkeynum = 0;
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.certfile", &str)) {
+      config.mqtt_certfile = (char *)str;
+      certkeynum++;
+    }
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.keyfile", &str)) {
+      config.mqtt_keyfile = (char *)str;
+      certkeynum++;
+    }
+    if (certkeynum != 0 && certkeynum != 2) {
+      die("If you want to use TLS Client Authentication, you have to specify "
+          "mqtt.certfile AND mqtt.keyfile.\nYou have supplied only one of them.\n"
+          "If you do not want to use TLS Client Authentication, leave both empty.");
+    }
+
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.topic", &str)) {
+      config.mqtt_topic = (char *)str;
+    }
+    config_set_lookup_bool(config.cfg, "mqtt.publish_raw", &config.mqtt_publish_raw);
+    config_set_lookup_bool(config.cfg, "mqtt.publish_parsed", &config.mqtt_publish_parsed);
+    config_set_lookup_bool(config.cfg, "mqtt.publish_cover", &config.mqtt_publish_cover);
+    config_set_lookup_bool(config.cfg, "mqtt.publish_retain", &config.mqtt_publish_retain);
+    if (config.mqtt_publish_cover && !config.get_coverart) {
+      die("You need to have metadata.include_cover_art enabled in order to use mqtt.publish_cover");
+    }
+    config_set_lookup_bool(config.cfg, "mqtt.enable_autodiscovery",
+                           &config.mqtt_enable_autodiscovery);
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.autodiscovery_prefix", &str)) {
+      config.mqtt_autodiscovery_prefix = (char *)str;
+    }
+    config_set_lookup_bool(config.cfg, "mqtt.enable_remote", &config.mqtt_enable_remote);
+    if (config_lookup_non_empty_string(config.cfg, "mqtt.empty_payload_substitute", &str)) {
+      if (strlen(str) == 0)
+        config.mqtt_empty_payload_substitute = NULL;
+      else
+        config.mqtt_empty_payload_substitute = strdup(str);
+    } else {
+      config.mqtt_empty_payload_substitute = strdup("--");
+    }
+#ifndef CONFIG_AVAHI
+    if (config.mqtt_enable_remote) {
+      die("You have enabled MQTT remote control which requires shairport-sync to be built with "
+          "Avahi, but your installation is not using avahi. Please reinstall/recompile with "
+          "avahi enabled, or disable remote control.");
+    }
+#endif
+
+#ifdef CONFIG_AIRPLAY_2
+    long long aid;
+
+    // replace the airplay_device_id with this, if provided
+    if (config_lookup_int64(config.cfg, "general.airplay_device_id", &aid)) {
+      temporary_airplay_id = aid;
+    }
+
+    // add the airplay_device_id_offset if provided
+    if (config_lookup_int64(config.cfg, "general.airplay_device_id_offset", &aid)) {
+      temporary_airplay_id += aid;
+    }
+
+#endif
+#endif
   }
 
   // now, do the command line options again, but this time do them fully -- it's a unix convention
@@ -1542,8 +1677,26 @@ int parse_options(int argc, char **argv) {
           str);
   }
 #endif
+  config.airplay_statusflags |= 1 << 2; // Audio cable is attached
+  if (config.password != NULL) {
+    config.airplay_statusflags |= 1 << 7; // Password required
+  }
+
+  // config.airplay_statusflags |= 1 << 11; // DeviceSupportsRelay
 
   // here, we are finally finished reading the options
+  
+  // now look at some of the status flags, though an initial value has been given further back
+
+  // Advertised with mDNS and returned with GET /info, see
+  // https://openairplay.github.io/airplay-spec/status_flags.html
+
+  // config.airplay_statusflags |= 1 << 17; // ReceiverSessionIsActive
+  // config.airplay_statusflags |= 1 << 10; // DeviceWasSetupForHKAccessControl
+  // config.airplay_statusflags |= 1 << 11; // DeviceSupportsRelay
+  // config.airplay_statusflags |= 1 << 19; // Unknown. Seems to control whether individual volume
+  // controls are shown and whether the SPS devices shows when its active.
+
 
   // finish the Airplay 2 options
 
@@ -1625,11 +1778,19 @@ int parse_options(int argc, char **argv) {
   // 496155702020608 this setting here is the source of both the plist features response and the
   // mDNS string.
 
-  config.airplay_features = 0x00018340405C4A00; // no AP2 metadata (b50), no AP1 text (b17), no AP1
+  config.airplay_features = 0x00010340401C4A00; // no AP2 metadata (b50), no AP1 text (b17), no AP1
                                                 // progress (b16), no AP1 artwork (b15)
-  //     0x0001C340405C4A00; // no AP2 metadata (b50), no AP1 text (b17), no AP1 progress (b16), no
-  //     AP1 artwork (b15) 0x0001C340445D0A00;
-  // config.airplay_features |= (1 << 26); // 0x0x4000000
+                                                // no HomeKit Pairing ability
+  
+  // These are important for allowing Shairport Sync to be added to Apple home.
+  config.airplay_features |= (((uint64_t)1 << 46) | ((uint64_t)1 << 47));
+  // Bit 46 seems to mean	SupportsHKPairingAndAccessControl	HomeKit-based pairing and access control support
+  // Bit 47 seems necessary too, but is undocumented.
+
+  // This is undocumented, but is set on the APX.
+  // config.airplay_features |= (uint64_t)1 << 22 ;
+
+  // debug(1, "Features: 0x%" PRIx64 ", unmask: 0x%" PRIx64 ", mask: 0x%" PRIx64 ".", config.airplay_features, unmask, mask);
 
   // features=0x0001C340445D0A00 -- AirPort Express
 
@@ -1651,6 +1812,9 @@ int parse_options(int argc, char **argv) {
     if (config.get_plist_metadata != 0) {
       config.airplay_features |=
         (uint64_t)1 << 50; // richer metadata in a binary plist, including more state information
+      config.airplay_features |=
+        (uint64_t)1 << 16; // ask for progress too
+  
     } else {
       // older metadata flags artwork, progress and text respectively
       config.airplay_features |= (((uint64_t)1 << 16) | ((uint64_t)1 << 17));
@@ -1677,20 +1841,6 @@ int parse_options(int argc, char **argv) {
   if (padding)
     *padding = 0;
   debug(2, "airplay_fex is \"%s\"", config.airplay_fex);
-
-  // now the status flags
-  // Advertised with mDNS and returned with GET /info, see
-  // https://openairplay.github.io/airplay-spec/status_flags.html
-
-  config.airplay_statusflags = 0;
-  config.airplay_statusflags |= 1 << 2; // Audio cable is attached
-  if (config.password != NULL) {
-    config.airplay_statusflags |= 1 << 7; // Password required
-  }
-  // config.airplay_statusflags |= 1 << 10; // DeviceWasSetupForHKAccessControl
-  // config.airplay_statusflags |= 1 << 11; // DeviceSupportsRelay
-  // config.airplay_statusflags |= 1 << 19; // Unknown. Seems to control whether individual volume
-  // controls are shown and whether the SPS devices shows when its active.
 
   config.airplay_pi = generate_device_uuid(config.airplay_device_id);
   config.airplay_pgid = generate_random_uuid();
@@ -1951,11 +2101,11 @@ void exit_function() {
 #if defined(CONFIG_DBUS_INTERFACE) || defined(CONFIG_MPRIS_INTERFACE)
         if (glib_worker_loop != NULL) { // may not have been initialised
           g_main_loop_quit(glib_worker_loop);
-          debug(2, "GMainLoop stop requested");
+          debug(3, "GMainLoop stop requested");
         }
         if (glib_worker_thread != NULL) {
           g_thread_join(glib_worker_thread);
-          debug(2, "GLib worker thread joined");
+          debug(3, "GLib worker thread joined");
         }
 
 #endif
@@ -3226,8 +3376,14 @@ int main(int argc, char **argv) {
   debug(option_print_level, "convolution maximum length is %f seconds.",
         config.convolution_max_length_in_seconds);
   debug(option_print_level, "convolution gain is %f", config.convolution_gain);
-  sanity_check_ir_files(option_print_level, config.convolution_ir_files,
+  int convolution_ir_files_status = sanity_check_ir_files(option_print_level, config.convolution_ir_files,
                         config.convolution_ir_file_count);
+  if (convolution_ir_files_status != 0) { // if non zero, it's the index of the errant file + 1                 
+    debug(option_print_level, "convolution impulse response file \"%s\" %s", config.convolution_ir_files[convolution_ir_files_status - 1].filename,
+          sf_strerror(NULL));
+    warn("Error accessing the convolution impulse response file \"%s\". %s", config.convolution_ir_files[convolution_ir_files_status - 1].filename,
+         sf_strerror(NULL));
+  }
 #endif
   debug(option_print_level, "loudness_enabled is %s.",
         config.loudness_enabled != 0 ? "true" : "false");

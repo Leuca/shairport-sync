@@ -23,20 +23,38 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "dbus-interface.h"
+#include <locale.h>
 #include <popt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <locale.h>
+
+#include "dbus-interface.h"
+#include "utilities/g_variant_pretty_print.h"
 
 GMainLoop *loop;
 
+// Pretty-prints a single property value.
+static void print_property_value(const char *label, const gchar *key, GVariant *value) {
+  gchar *value_str = g_variant_pretty_print(value, FALSE, 2);
+  if (label)
+    g_print("      %s.%s -> %s\n", label, key, value_str);
+  else
+    g_print("      %s -> %s\n", key, value_str);
+  g_free(value_str);
+}
+
+// Generic handler for "g-properties-changed" on any proxy. changed_properties
+// is always "a{sv}" per the org.freedesktop.DBus.Properties spec, regardless
+// of what type any individual property has -- so this one handler covers
+// every interface, including ones (like CommandInformation) whose value is
+// itself an "av".
 void on_properties_changed(__attribute__((unused)) GDBusProxy *proxy, GVariant *changed_properties,
                            const gchar *const *invalidated_properties, gpointer user_data) {
   /* Note that we are guaranteed that changed_properties and
    * invalidated_properties are never NULL
    */
+  const char *label = (const char *)user_data;
 
   if (g_variant_n_children(changed_properties) > 0) {
     GVariantIter *iter;
@@ -44,25 +62,16 @@ void on_properties_changed(__attribute__((unused)) GDBusProxy *proxy, GVariant *
     GVariant *value;
     g_print(" *** Properties Changed:\n");
     g_variant_get(changed_properties, "a{sv}", &iter);
-    while (g_variant_iter_loop(iter, "{&sv}", &key, &value)) {
-      gchar *value_str;
-      value_str = g_variant_print(value, TRUE);
-      if (user_data)
-        g_print("      %s.%s -> %s\n", (char *)user_data, key, value_str);
-      else
-        g_print("      %s -> %s\n", key, value_str);
-      g_free(value_str);
-    }
+    while (g_variant_iter_loop(iter, "{&sv}", &key, &value))
+      print_property_value(label, key, value);
     g_variant_iter_free(iter);
   }
 
   if (g_strv_length((GStrv)invalidated_properties) > 0) {
     guint n;
     g_print(" *** Properties Invalidated:\n");
-    for (n = 0; invalidated_properties[n] != NULL; n++) {
-      const gchar *key = invalidated_properties[n];
-      g_print("      %s\n", key);
-    }
+    for (n = 0; invalidated_properties[n] != NULL; n++)
+      g_print("      %s\n", invalidated_properties[n]);
   }
 }
 
@@ -157,7 +166,19 @@ int main(int argc, char *argv[]) {
   g_signal_connect(proxy, "notify::loudness-threshold",
                    G_CALLBACK(notify_loudness_threshold_callback), "ShairportSync");
 
-  // Now, add notification of changes in diagnostics
+  // Now, add notification of changes in client (this covers both
+  // NowPlayingInformation, which is "a{sv}", and CommandInformation, which
+  // is "av" -- on_properties_changed handles both transparently)
+
+  ShairportSyncClient *proxyClient;
+  GError *errorClient = NULL;
+  proxyClient = shairport_sync_client_proxy_new_for_bus_sync(
+      gbus_type_selected, G_DBUS_PROXY_FLAGS_NONE, "org.gnome.ShairportSync",
+      "/org/gnome/ShairportSync", NULL, &errorClient);
+  g_signal_connect(proxyClient, "g-properties-changed", G_CALLBACK(on_properties_changed),
+                   "ShairportSync.Client");
+
+ // Now, add notification of changes in diagnostics
 
   ShairportSyncDiagnostics *proxy2;
   GError *error2 = NULL;

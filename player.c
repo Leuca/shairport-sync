@@ -364,22 +364,22 @@ const char *get_category_string(airplay_stream_c cat) {
   char *category;
   switch (cat) {
   case unspecified_stream_category:
-    category = "unspecified stream";
+    category = "unspecified";
     break;
   case ptp_stream:
-    category = "PTP stream";
+    category = "PTP";
     break;
   case ntp_stream:
-    category = "NTP stream";
+    category = "NTP";
     break;
   case remote_control_stream:
-    category = "Remote Control stream";
+    category = "Remote Control";
     break;
   case classic_airplay_stream:
-    category = "Classic AirPlay stream";
+    category = "Classic AirPlay";
     break;
   default:
-    category = "Unexpected stream code";
+    category = "unknown";
     break;
   }
   return category;
@@ -1659,7 +1659,6 @@ uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp
           av_frame_free(&abuf->avframe);
           abuf->avframe = NULL;
         }
-
         if (len <= 8) {
           debug(2,
                 "Connection %d: using FFMPEG on a %s stream, a short audio packet %u, rtptime %u, "
@@ -3403,21 +3402,21 @@ void player_thread_cleanup_handler(void *arg) {
 #else
   debug(2, "Cancelling AP1 timing, control and audio threads...");
 #endif
-    debug(3, "Cancel timing thread.");
+    debug(4, "Cancel timing thread.");
     pthread_cancel(conn->rtp_timing_thread);
-    debug(3, "Join timing thread.");
+    debug(4, "Join timing thread.");
     pthread_join(conn->rtp_timing_thread, NULL);
-    debug(3, "Timing thread terminated.");
-    debug(3, "Cancel control thread.");
+    debug(4, "Timing thread terminated.");
+    debug(4, "Cancel control thread.");
     pthread_cancel(conn->rtp_control_thread);
-    debug(3, "Join control thread.");
+    debug(4, "Join control thread.");
     pthread_join(conn->rtp_control_thread, NULL);
-    debug(3, "Control thread terminated.");
-    debug(3, "Cancel audio thread.");
+    debug(4, "Control thread terminated.");
+    debug(4, "Cancel audio thread.");
     pthread_cancel(conn->rtp_audio_thread);
-    debug(3, "Join audio thread.");
+    debug(4, "Join audio thread.");
     pthread_join(conn->rtp_audio_thread, NULL);
-    debug(3, "Audio thread terminated.");
+    debug(4, "Audio thread terminated.");
 
 #ifdef CONFIG_AIRPLAY_2
   }
@@ -3669,7 +3668,7 @@ void *player_thread_func(void *arg) {
 #ifdef CONFIG_AIRPLAY_2
   if (conn->timing_type == ts_ntp) {
 #endif
-
+    debug(3,"Connection %d: creating audio/contol/timing threads.", conn->connection_number);
     // create and start the timing, control and audio receiver threads
     named_pthread_create(&conn->rtp_audio_thread, NULL, &rtp_audio_receiver, (void *)conn,
                          "ap1_audio_%d", conn->connection_number);
@@ -4609,7 +4608,7 @@ void *player_thread_func(void *arg) {
 #endif
                 ) {
 
-                  float (*fbufs)[1024] = malloc(conn->input_num_channels * sizeof(*fbufs));
+                  float(*fbufs)[1024] = malloc(conn->input_num_channels * sizeof(*fbufs));
                   // debug(1, "size of array allocated is %d bytes.", conn->input_num_channels *
                   // sizeof(*fbufs));
                   int32_t *tbuf32 = conn->tbuf;
@@ -4977,7 +4976,7 @@ void *player_thread_func(void *arg) {
     }
   }
 
-  debug(1, "This should never be called.");
+  debug(1, "\"Normal\" player thread exist will never happen.");
   pthread_cleanup_pop(1); // pop the cleanup handler
                           //  debug(1, "This should never be called either.");
                           //  pthread_cleanup_pop(1); // pop the initial cleanup handler

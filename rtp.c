@@ -589,7 +589,7 @@ void *rtp_control_receiver(void *arg) {
 
 void rtp_timing_sender_cleanup_handler(void *arg) {
   rtsp_conn_info *conn = (rtsp_conn_info *)arg;
-  debug(3, "Connection %d: Timing Sender Cleanup.", conn->connection_number);
+  debug(4, "Connection %d: Timing Sender Cleanup.", conn->connection_number);
 }
 
 void *rtp_timing_sender(void *arg) {
@@ -645,7 +645,7 @@ void *rtp_timing_sender(void *arg) {
                  (struct sockaddr *)&conn->rtp_client_timing_socket, msgsize) == -1) {
         char em[1024];
         strerror_r(errno, em, sizeof(em));
-        debug(1, "Error %d using send-to to the timing socket: \"%s\".", errno, em);
+        debug(1, "Connection %d: error %d using send-to to timing socket %d: \"%s\".", conn->connection_number, errno, conn->timing_socket, em);
       }
     } else {
       debug(3, "Timing Sender Thread -- dropping outgoing packet to simulate bad network.");
@@ -665,7 +665,7 @@ void *rtp_timing_sender(void *arg) {
 
 void rtp_timing_receiver_cleanup_handler(void *arg) {
   rtsp_conn_info *conn = (rtsp_conn_info *)arg;
-  debug(3, "Timing Receiver Cleanup.");
+  debug(4, "Timing Receiver Cleanup.");
   // walk down the list of DACP / gradient pairs, if any
   nvll *gradients = config.gradients;
   if (conn->dacp_id)
@@ -690,13 +690,13 @@ void rtp_timing_receiver_cleanup_handler(void *arg) {
     }
   }
 
-  debug(3, "Cancel Timing Requester.");
+  debug(4, "Cancel Timing Requester.");
   pthread_cancel(conn->timer_requester);
   int oldState;
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldState);
-  debug(3, "Join Timing Requester.");
+  debug(4, "Join Timing Requester.");
   pthread_join(conn->timer_requester, NULL);
-  debug(3, "Timing Receiver Cleanup Successful.");
+  debug(4, "Timing Receiver Cleanup Successful.");
   pthread_setcancelstate(oldState, NULL);
 }
 
@@ -1511,7 +1511,8 @@ int frame_to_ptp_local_time(uint32_t timestamp, uint64_t *time, rtsp_conn_info *
   int result = -1;
   uint32_t anchor_rtptime = 0;
   uint64_t anchor_local_time = 0;
-  if ((conn->input_rate != 0) && (get_ptp_anchor_local_time_info(conn, &anchor_rtptime, &anchor_local_time) == clock_ok)) {
+  if ((conn->input_rate != 0) &&
+      (get_ptp_anchor_local_time_info(conn, &anchor_rtptime, &anchor_local_time) == clock_ok)) {
     int32_t frame_difference = timestamp - anchor_rtptime;
     int64_t time_difference = frame_difference;
     time_difference = time_difference * 1000000000;
@@ -1529,7 +1530,8 @@ int local_ptp_time_to_frame(uint64_t time, uint32_t *frame, rtsp_conn_info *conn
   int result = -1;
   uint32_t anchor_rtptime = 0;
   uint64_t anchor_local_time = 0;
-  if ((conn->input_rate != 0) && (get_ptp_anchor_local_time_info(conn, &anchor_rtptime, &anchor_local_time) == clock_ok)) {
+  if ((conn->input_rate != 0) &&
+      (get_ptp_anchor_local_time_info(conn, &anchor_rtptime, &anchor_local_time) == clock_ok)) {
     int64_t time_difference = time - anchor_local_time;
     int64_t frame_difference = time_difference;
     frame_difference = frame_difference * conn->input_rate; // but this is by 10^9
@@ -1596,7 +1598,7 @@ int32_t decipher_player_put_packet(uint8_t *ciphered_audio_alt, ssize_t nread,
           nonce,
           conn->session_key); // *k
       if (response != 0) {
-        debug(1, "Error decrypting an audio packet.");
+        debug(3, "Error decrypting an audio packet.");
       }
       // now pass it in to the regular processing chain
 
@@ -1609,7 +1611,8 @@ int32_t decipher_player_put_packet(uint8_t *ciphered_audio_alt, ssize_t nread,
       player_put_packet(ALAC_44100_S16_2, sequence_number, timestamp, m, plen, 0, 0,
                         conn); // 0 = no mute, 0 = non discontinuous
     } else {
-      debug(2, "No session key, so the audio packet can not be deciphered -- skipped.");
+      debug(4, "No session key, so the audio packet of %zd bytes can not be deciphered -- skipped.", nread);
+      debug_print_buffer(4, ciphered_audio_alt, nread);
     }
     return sequence_number;
   } else {

@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.50])
-AC_INIT([shairport-sync], [5.3-dev], [4265913+mikebrady@users.noreply.github.com])
+AC_INIT([shairport-sync], [5.4-dev], [4265913+mikebrady@users.noreply.github.com])
 : ${CFLAGS="-O3"}
 : ${CXXFLAGS="-O3"}
 AM_INIT_AUTOMAKE([subdir-objects])
@@ -390,6 +390,8 @@ if test "x$with_mpris_test_client" = "xyes" || test "x$with_dbus_test_client" = 
   PKG_CHECK_MODULES([glib], [gio-unix-2.0 >= 2.30.0],[CFLAGS="${glib_CFLAGS} ${CFLAGS}" LIBS="${glib_LIBS} ${LIBS}"],[AC_MSG_ERROR(the glib 2.0 library is required -- libglib2.0-dev suggested!)])
 fi
 
+AM_CONDITIONAL([ADD_DBUS_SUPPORT], [test "x$with_mpris_interface" = "xyes" || test "x$with_dbus_interface" = "xyes"])
+
 # Look for mqtt flag
 AC_ARG_WITH(mqtt-client, [AS_HELP_STRING([--with-mqtt-client],[include a client for MQTT -- the Message Queuing Telemetry Transport protocol])])
 if test "x$with_mqtt_client" = "xyes" ; then
@@ -403,14 +405,15 @@ if test "x$with_mqtt_client" = "xyes" && test "x$with_avahi" != "xyes" ; then
 fi
 
 if test "x$with_mpris_interface" = "xyes" || test "x$with_dbus_interface" = "xyes" || test "x$with_mqtt_client" = "xyes" ; then
-  REQUESTED_EXTENDED_METADATA_SUPPORT=1
+  REQUESTED_EXTENDED_METADATA_AND_REMOTE_CONTROL_SUPPORT=1
   AC_DEFINE([CONFIG_METADATA_HUB], 1, [Needed by the compiler.])
-  AC_DEFINE([CONFIG_DACP_CLIENT], 1, [Needed by the compiler.])
+  AC_DEFINE([CONFIG_DACP_CLIENT], 1, [DACP client needed for extended metadata support.])
 fi
-AM_CONDITIONAL([USE_METADATA_HUB], [test "x$REQUESTED_EXTENDED_METADATA_SUPPORT" = "x1"])
-AM_CONDITIONAL([USE_DACP_CLIENT], [test "x$REQUESTED_EXTENDED_METADATA_SUPPORT" = "x1"])
+AM_CONDITIONAL([USE_METADATA_HUB], [test "x$REQUESTED_EXTENDED_METADATA_AND_REMOTE_CONTROL_SUPPORT" = "x1"])
+AM_CONDITIONAL([USE_DACP_CLIENT], [test "x$REQUESTED_EXTENDED_METADATA_AND_REMOTE_CONTROL_SUPPORT" = "x1"])
+AM_CONDITIONAL([USE_REMOTE_CONTROL], [test "x$REQUESTED_EXTENDED_METADATA_AND_REMOTE_CONTROL_SUPPORT" = "x1"])
 
-if test "x$REQUESTED_EXTENDED_METADATA_SUPPORT" = "x1" || test "x$with_metadata" = "xyes" || test "x$with_metadata_pipe" = "xyes" || test "x$with_metadata_multicast" = "xyes" ; then
+if test "x$REQUESTED_EXTENDED_METADATA_AND_REMOTE_CONTROL_SUPPORT" = "x1" || test "x$with_metadata" = "xyes" || test "x$with_metadata_pipe" = "xyes" || test "x$with_metadata_multicast" = "xyes" ; then
   REQUESTED_METADATA_SUPPORT=1
 fi
 
@@ -554,6 +557,8 @@ if  test "x${with_systemd_startup}" = xyes ; then
   AS_IF([test "x$with_systemdsystemunitdir" != "xno"],
         [AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
 fi
+
+
 
 # Checks for header files.
 AC_CHECK_HEADERS([getopt_long.h])

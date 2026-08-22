@@ -31,17 +31,11 @@ typedef enum {
 #define SAFAMILY sa_family
 #endif
 
-#if defined(CONFIG_CONVOLUTION)
-// impulse response filter file status
-typedef enum { ev_unchecked, ev_okay, ev_invalid } ir_file_evaluation;
 
-// impulse response filter file record
-typedef struct {
-  unsigned int samplerate; // initialized to 0, will be filter frame rate
-  unsigned int channels;
-  char *filename; // the parsed filename
-} ir_file_info_t;
+#ifdef CONFIG_CONVOLUTION
+#include "utilities/ir_file_support.h"
 #endif
+
 
 #if defined(CONFIG_DBUS_INTERFACE) || defined(CONFIG_MPRIS_INTERFACE)
 #include <glib.h>
@@ -402,10 +396,11 @@ typedef struct {
   char *model;
   char *srcvers;
   char *osvers;
+  unsigned int vv;                // may be associated with different volume control arrangements
+  uint32_t airplay_statusflags;
 
 #ifdef CONFIG_AIRPLAY_2
   uint64_t airplay_features;
-  uint32_t airplay_statusflags;
   char *airplay_fex;       // a base64-encoded version of the airplay_features in little-endian form
   char *airplay_device_id; // for the Bonjour advertisement and the GETINFO PList
   char *airplay_pi;        // UUID in the Bonjour advertisement and the GETINFO Plist
@@ -415,6 +410,7 @@ typedef struct {
   char *pk_string;
   char *nqptp_shared_memory_interface_name; // client name for nqptp service
   int enable_HK_Access_Control;             // true if the device is part of an Apple Home
+  unsigned int volumeControlType; // may be associated with different volume control arrangements
 #endif
 
   APST_t service_type; // APST_auto, APST_classic, APST_forced_classic, APST_airplay2
@@ -613,24 +609,6 @@ void *memdup(const void *mem, size_t size);
 int get_device_id(uint8_t *id, int int_length);
 
 char *bnprintf(char *buffer, ssize_t max_bytes, const char *format, ...);
-
-#ifdef CONFIG_CONVOLUTION
-
-/* Parse comma-separated filenames with optional quotes from the input string
- * Returns array of ir_file_info_t structs (caller must free both array and filenames)
- * count is set to number of filenames found
- * Returns NULL on error
- */
-ir_file_info_t *parse_ir_filenames(const char *input, unsigned int *file_count);
-// Access: files[i].filename, files[i].rate, files[i].evaluation
-
-/* Do a quick sanity check on the files -- see if they can be opened as sound files */
-void sanity_check_ir_files(const int option_print_level, ir_file_info_t *files, unsigned int count);
-
-/* Free the array returned by parse_filenames */
-void free_ir_filenames(ir_file_info_t *files, unsigned int file_count);
-
-#endif
 
 #ifdef CONFIG_USE_GIT_VERSION_STRING
 extern char git_version_string[];
