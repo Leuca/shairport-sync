@@ -1,6 +1,5 @@
 #pragma once
 #include "common.h"
-#include "config.h"
 #include "rtsp.h"
 #include <pthread.h>
 
@@ -31,17 +30,12 @@ typedef enum {
   RS_ALL,
 } repeat_status_type;
 
-typedef struct {
-  uint64_t item; // the value
-  int valid;     // set to true if valid
-} uint64_record_t;
-
 int update_string_record_with_data(char **str, const char *data, size_t length); // data and length
 int update_string_record(char **str, const char *s); // returns true if the string has changed
+
 int update_uint64_record(
     uint64_record_t *record,
-    const uint64_t value); // returns true if the string has changed, sets item to valid
-int is_valid_uint64_record(uint64_record_t *record);
+    const uint64_t value); // returns true if the value has changed, sets item to valid
 
 struct metadata_bundle;
 
@@ -70,7 +64,19 @@ typedef struct metadata_npi_bundle { // now playing information
   char *sort_album;
   char *sort_composer;
   uint64_record_t songtime_in_microseconds;
+  int playing_state; // this is unreliable, but 1 seems to mean in playing mode, 2 seems to mean not
+                     // in tune playing mode, even if audio is being streamed...
+  // We'll use it so that we will only recognise and increment progress if we have a progress string
+  // and the playing_state is 1.
 #ifdef CONFIG_AIRPLAY_2
+
+  uint64_t nowPlayingInfoPriorElapsedTime;
+  uint64_record_t nowPlayingInfoTimestamp; // valid when playing, invalid otherwise
+  uint64_t nowPlayingInfoSubsequentElapsedTime;
+
+  // uint64_t elapsed_time_ns;        // nanoseconds of play of the current track
+  // uint64_record_t play_start_time; // valid if playing, invalid otherwise
+
   plist_t npi_plist; // this can contain information a lot more than we use...
 #endif
 } metadata_npi_bundle;

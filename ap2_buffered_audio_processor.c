@@ -283,10 +283,14 @@ void *rtp_buffered_audio_processor(void *arg) {
           if (payload_ssrc != SSRC_NONE)
             previous_ssrc = payload_ssrc;
           payload_ssrc = nctohl(&packet[8]);
+          
+          if (ssrc_is_recognised(payload_ssrc) == 0) {
+              debug(1, "Unrecognised SSRC: \"%s\" in packet %" PRIu64 ".", get_ssrc_name(payload_ssrc), blocks_read);
+          }
 
           if ((payload_ssrc != previous_ssrc) && (payload_ssrc != SSRC_NONE)) {
             if (ssrc_is_recognised(payload_ssrc) == 0) {
-              debug(2, "Unrecognised SSRC: %u.", payload_ssrc);
+              debug(2, "Unrecognised SSRC: \"%s\" in packet %" PRIu64 ".", get_ssrc_name(payload_ssrc), blocks_read);
             } else {
               debug(2, "Connection %d: incoming audio encoding is%s \"%s\".",
                     conn->connection_number, previous_ssrc == SSRC_NONE ? "" : " switching to",
@@ -294,7 +298,7 @@ void *rtp_buffered_audio_processor(void *arg) {
             }
           }
 
-          if ((ssrc_is_recognised(payload_ssrc) != 0) && (payload_ssrc != SSRC_NONE)) {
+          if (ssrc_is_recognised(payload_ssrc) != 0) {
             new_audio_block_needed = 0; // a valid block has been read.
             // if necessary, set the input rate...
             if (conn->input_rate == 0) {
@@ -303,23 +307,24 @@ void *rtp_buffered_audio_processor(void *arg) {
               sequence_number_for_player =
                   seq_no & 0xffff; // this is arbitrary -- the sequence_number_for_player numbers will
                                    // be sequential irrespective of seq_no jumps...
-            } else {
-              uint32_t t_expected_seqno = (previous_seqno + 1) & 0x7fffff;
-              if (t_expected_seqno != seq_no) {
-                debug(2,
-                      "reading block %u, the sequence number differs from the expected sequence "
-                      "number %u. The previous sequence number was %u",
-                      seq_no, t_expected_seqno, previous_seqno);
-              }
-              uint32_t t_expected_timestamp =
-                  previous_timestamp + get_ssrc_block_length(previous_ssrc);
-              int32_t diff = timestamp - t_expected_timestamp;
-              if (diff != 0) {
-                debug(2, "reading block %u, the timestamp %u differs from expected_timestamp %u.",
-                      seq_no, timestamp, t_expected_timestamp);
-              }
             }
-          }
+          } 
+          if (blocks_read > 1) {
+            uint32_t t_expected_seqno = (previous_seqno + 1) & 0x7fffff;
+            if (t_expected_seqno != seq_no) {
+              debug(2,
+                    "reading block %u, the sequence number differs from the expected sequence "
+                    "number %u. The previous sequence number was %u",
+                    seq_no, t_expected_seqno, previous_seqno);
+            }
+            uint32_t t_expected_timestamp =
+                previous_timestamp + get_ssrc_block_length(previous_ssrc);
+            int32_t diff = timestamp - t_expected_timestamp;
+            if (diff != 0) {
+              debug(2, "reading block %u, the timestamp %u differs from expected_timestamp %u.",
+                    seq_no, timestamp, t_expected_timestamp);
+            }
+          }          
         }
       }
 

@@ -52,9 +52,9 @@
 #include <sys/ioctl.h>
 
 #include "activity_monitor.h"
-#include "config.h"
 #include "utilities/network_utilities.h"
 #include "utilities/rtsp_message_utilities.h"
+#include "utilities/string_utilities.h"
 
 #ifdef CONFIG_OPENSSL
 #include <openssl/evp.h>
@@ -266,7 +266,7 @@ int terminate_conn(int connection_number) {
   pthread_mutex_unlock(&conns_lock);
 #ifdef CONFIG_METADATA
   if (found) {
-    debug(1, "Connection %d: is being terminated; terminate_conn is sending 'prmp'",
+    debug(4, "Connection %d: is being terminated; terminate_conn is sending 'prmp'",
           connection_number);
     send_ssnc_metadata('prmp', (const char *)&connection_number, sizeof(connection_number),
                        1); // PRe-eMPted
@@ -326,7 +326,7 @@ void release_play_lock(rtsp_conn_info *conn) {
       config.airplay_statusflags &= (0xffffffff - (1 << 17)); // ReceiverSessionIsActive
       build_bonjour_strings(principal_conn);
       mdns_update(txt_records, secondary_txt_records);
-      debug(1, "Connection %d: (%s) has released play lock.", conn->connection_number,
+      debug(4, "Connection %d: (%s) has released play lock.", conn->connection_number,
             get_category_string(conn->airplay_stream_category));
     }
     principal_conn = NULL; // let it go
@@ -382,7 +382,7 @@ play_lock_r get_play_lock(rtsp_conn_info *conn, int allow_session_interruption) 
             get_category_string(conn->airplay_stream_category));
       rtsp_conn_info *previous_principal_conn = principal_conn;
       principal_conn = conn; // make the conn the new principal_conn
-      debug(1, "Connection %d: (%s) is pre-empting play lock from connection %d.",
+      debug(4, "Connection %d: (%s) is pre-empting play lock from connection %d.",
             conn->connection_number, get_category_string(conn->airplay_stream_category),
             previous_principal_conn->connection_number);
       terminate_conn(previous_principal_conn->connection_number);
@@ -410,7 +410,7 @@ play_lock_r get_play_lock(rtsp_conn_info *conn, int allow_session_interruption) 
     }
     //    if ((principal_conn != NULL) && (response != play_lock_already_acquired))
     if (response != play_lock_already_acquired) {
-      debug(1, "Connection %d: (%s) has acquired play lock.", conn->connection_number,
+      debug(4, "Connection %d: (%s) has acquired play lock.", conn->connection_number,
             get_category_string(conn->airplay_stream_category));
     }
     pthread_cleanup_pop(1); // release the principal_conn lock
@@ -1529,6 +1529,7 @@ void handle_post(rtsp_conn_info *conn, rtsp_message *req,
 #endif
 
 #ifdef CONFIG_AIRPLAY_2
+
 struct pairings {
   char device_id[PAIR_AP_DEVICE_ID_LEN_MAX];
   uint8_t public_key[32];
@@ -1607,13 +1608,6 @@ static void pairing_list_cb(pair_cb enum_cb, void *enum_cb_arg,
 
 void handle_pair_add(rtsp_conn_info *conn __attribute__((unused)), rtsp_message *req,
                      rtsp_message *resp) {
-
-  char *hdr = msg_get_header(req, "X-Apple-Client-Name");
-  if (hdr) {
-    if (conn->ap2_client_name)
-      free(conn->ap2_client_name);
-    conn->ap2_client_name = strdup(hdr);
-  }
   debug(1, "Connection %d from \"%s\": handle_pair_add", conn->connection_number,
         conn->ap2_client_name);
   debug_log_rtsp_message_conn(conn, 1, "pair-add request", req);
@@ -1634,12 +1628,6 @@ void handle_pair_add(rtsp_conn_info *conn __attribute__((unused)), rtsp_message 
 
 void handle_pair_list(rtsp_conn_info *conn __attribute__((unused)), rtsp_message *req,
                       rtsp_message *resp) {
-  char *hdr = msg_get_header(req, "X-Apple-Client-Name");
-  if (hdr) {
-    if (conn->ap2_client_name)
-      free(conn->ap2_client_name);
-    conn->ap2_client_name = strdup(hdr);
-  }
   debug(1, "Connection %d from \"%s\": handle_pair_list", conn->connection_number,
         conn->ap2_client_name);
   uint8_t *body = NULL;
@@ -1659,13 +1647,6 @@ void handle_pair_list(rtsp_conn_info *conn __attribute__((unused)), rtsp_message
 
 void handle_pair_remove(rtsp_conn_info *conn __attribute__((unused)), rtsp_message *req,
                         rtsp_message *resp) {
-
-  char *hdr = msg_get_header(req, "X-Apple-Client-Name");
-  if (hdr) {
-    if (conn->ap2_client_name)
-      free(conn->ap2_client_name);
-    conn->ap2_client_name = strdup(hdr);
-  }
   debug(1, "Connection %d from \"%s\": handle_pair_remove", conn->connection_number,
         conn->ap2_client_name);
   uint8_t *body = NULL;
@@ -1684,12 +1665,6 @@ void handle_pair_remove(rtsp_conn_info *conn __attribute__((unused)), rtsp_messa
 }
 
 void handle_pair_verify(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
-  char *hdr = msg_get_header(req, "X-Apple-Client-Name");
-  if (hdr) {
-    if (conn->ap2_client_name)
-      free(conn->ap2_client_name);
-    conn->ap2_client_name = strdup(hdr);
-  }
   // try to pick up the stages
   uint8_t *b = (uint8_t *)req->content;
   char mstage = '-';
@@ -1750,13 +1725,6 @@ out:
 }
 
 void handle_pair_pin_start(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
-
-  char *hdr = msg_get_header(req, "X-Apple-Client-Name");
-  if (hdr) {
-    if (conn->ap2_client_name)
-      free(conn->ap2_client_name);
-    conn->ap2_client_name = strdup(hdr);
-  }
   debug(4, "Connection %d from \"%s\": handle_pair_pin_start, Content-Length %d",
         conn->connection_number, conn->ap2_client_name, req->contentlength);
   debug_log_rtsp_message_conn(conn, 4, "handle_pair_pin_start", req);
@@ -1772,13 +1740,6 @@ void handle_pair_pin_start(rtsp_conn_info *conn, rtsp_message *req, rtsp_message
 }
 
 void handle_pair_setup(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
-
-  char *hdr = msg_get_header(req, "X-Apple-Client-Name");
-  if (hdr) {
-    if (conn->ap2_client_name)
-      free(conn->ap2_client_name);
-    conn->ap2_client_name = strdup(hdr);
-  }
   debug(4, "Connection %d from \"%s\": handle_pair_setup, Content-Length %d",
         conn->connection_number, conn->ap2_client_name, req->contentlength);
   debug_log_rtsp_message_conn(conn, 4, "pair-setup request", req);
@@ -1843,13 +1804,6 @@ out:
 
 void handle_fp_setup(__attribute__((unused)) rtsp_conn_info *conn, rtsp_message *req,
                      rtsp_message *resp) {
-
-  char *hdr = msg_get_header(req, "X-Apple-Client-Name");
-  if (hdr) {
-    if (conn->ap2_client_name)
-      free(conn->ap2_client_name);
-    conn->ap2_client_name = strdup(hdr);
-  }
   debug(2, "Connection %d from \"%s\": handle_fp_setup,", conn->connection_number,
         conn->ap2_client_name);
   debug_log_rtsp_message_conn(conn, 2, "fp-setup request", req);
@@ -2097,7 +2051,7 @@ void handle_command(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp)
       plist_t command_dict = NULL;
       plist_from_memory(req->content, req->contentlength, &command_dict);
       if (command_dict != NULL) {
-        metadata_hub_handle_command_plist(command_dict);
+        metadata_hub_handle_command_plist(conn, command_dict);
         plist_free(command_dict);
       } else {
         debug(1, "Connection %d: POST /command  -- cannot extract the plist",
@@ -2123,6 +2077,39 @@ void handle_audio_mode(rtsp_conn_info *conn, rtsp_message *req,
 
 void handle_post(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
   resp->respcode = 200;
+
+  char *hdr = msg_get_header(req, "X-Apple-Client-Name");
+  if (hdr) {
+    if (conn->ap2_client_name)
+      free(conn->ap2_client_name);
+    conn->ap2_client_name = strdup(hdr);
+  }
+  
+#ifdef CONFIG_AIRPLAY_2
+#ifdef CONFIG_METADATA
+  hdr = msg_get_header(req, "X-Apple-AbsoluteTime");
+  if (hdr) {
+    // We will calculate the offset between local absolute time and Apple-AbsoluteTime
+    // amd store that.
+    if (conn->localTimeToAppleAbsoluteTimeOffset.valid == 0) {
+      uint64_t localTimeToAppleAbsoluteTimeOffset = 0;
+      if (parse_u64(hdr, &localTimeToAppleAbsoluteTimeOffset) == 0) {
+        // debug(1, "Apple Absolute Time is %" PRIu64 ".", localTimeToAppleAbsoluteTimeOffset);
+        // Convert to nanoseconds in 64 bits.
+        // Given that these seconds are from the Unix Epoch or the Mac/Cocoa Epoch,
+        // this won't overflow until the year 2554 at the earliest.
+        localTimeToAppleAbsoluteTimeOffset =
+            localTimeToAppleAbsoluteTimeOffset * (uint64_t)1000000000;
+        localTimeToAppleAbsoluteTimeOffset =
+            localTimeToAppleAbsoluteTimeOffset - get_absolute_time_in_ns();
+        conn->localTimeToAppleAbsoluteTimeOffset.value = localTimeToAppleAbsoluteTimeOffset;
+        conn->localTimeToAppleAbsoluteTimeOffset.valid = 1;
+      }
+    }
+  }
+#endif
+#endif
+   
   if (strcmp(req->path, "/pair-setup") == 0) {
     handle_pair_setup(conn, req, resp);
   } else if (strcmp(req->path, "/pair-verify") == 0) {
@@ -2448,8 +2435,7 @@ void handle_setup_2(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp)
                   get_category_string(conn->airplay_stream_category));
 
 #ifdef CONFIG_METADATA
-            send_ssnc_metadata('conn', conn->client_ip_string, strlen(conn->client_ip_string),
-                               1); // before disconnecting an existing play
+            send_ssnc_metadata('conn', conn->client_ip_string, strlen(conn->client_ip_string), 1);
             send_ssnc_metadata('clip', conn->client_ip_string, strlen(conn->client_ip_string), 1);
             send_ssnc_metadata('svip', conn->self_ip_string, strlen(conn->self_ip_string), 1);
 #endif
@@ -3432,13 +3418,20 @@ static void handle_announce(rtsp_conn_info *conn, rtsp_message *req, rtsp_messag
 
 #ifdef CONFIG_AIRPLAY_2
     // In AirPlay 2, an ANNOUNCE signifies the start of an AirPlay 1 session.
-    debug(1, "Connection %d: %s connection from %s:%u to self at %s:%u.", conn->connection_number,
+    debug(4, "Connection %d: %s connection from %s:%u to self at %s:%u.", conn->connection_number,
           get_category_string(conn->airplay_stream_category), conn->client_ip_string,
           conn->client_rtsp_port, conn->self_ip_string, conn->self_rtsp_port);
     conn->airplay_type = ap_1;
     conn->timing_type = ts_ntp;
     conn->type = 96; // this is the AirPlay 2 code for Realtime Audio -- not sure it's right
 #endif
+
+#ifdef CONFIG_METADATA
+    send_ssnc_metadata('conn', conn->client_ip_string, strlen(conn->client_ip_string), 1);
+    send_ssnc_metadata('clip', conn->client_ip_string, strlen(conn->client_ip_string), 1);
+    send_ssnc_metadata('svip', conn->self_ip_string, strlen(conn->self_ip_string), 1);
+#endif
+
     conn->stream.type = ast_unknown;
     resp->respcode = 200; // presumed OK
     char *pssid = NULL;
@@ -4148,9 +4141,6 @@ static void *rtsp_conversation_thread_func(void *pconn) {
   while (conn->stop == 0) {
     pthread_testcancel();
     int debug_level = 4; // for printing the request and response
-
-    // check to see if a conn has been zeroed
-
     pthread_mutex_lock(&conns_lock);
     int i;
     for (i = 0; i < nconns; i++) {

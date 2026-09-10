@@ -44,7 +44,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "config.h"
 
 #ifdef CONFIG_MBEDTLS
 #include <mbedtls/aes.h>
@@ -4639,7 +4638,7 @@ void *player_thread_func(void *arg) {
 #endif
                 ) {
 
-                  float(*fbufs)[inframe->length] =
+                  float (*fbufs)[inframe->length] =
                       malloc(conn->input_num_channels * sizeof(*fbufs));
                   // debug(1, "size of array allocated is %d bytes.", conn->input_num_channels *
                   // sizeof(*fbufs));

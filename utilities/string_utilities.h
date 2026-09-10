@@ -7,6 +7,9 @@ char *str_replace(const char *string, const char *substr, const char *replacemen
 
 char *service_name(const char *raw_service_name);
 
+// read in a 64-bit unsigned number
+int parse_u64(const char *str, uint64_t *out);
+
 // Read an entire file into a newly-allocated, null-terminated buffer.
 // Returns NULL (with errno set) if the file cannot be opened or read.
 // The caller must free the returned buffer.
@@ -19,4 +22,5 @@ char *read_file_to_string(const char *pathname);
 // "${" is returned unchanged. name_for_errors identifies the text in error
 // messages. Returns a newly-allocated, null-terminated string to be freed by
 // the caller.
+
 char *expand_environment_variables(const char *text, const char *name_for_errors);

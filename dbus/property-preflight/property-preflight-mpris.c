@@ -174,24 +174,66 @@ static gint64 property_preflight_mpris_estimate_position_microseconds(void) {
   static gint64 position = 0;
   pthread_rwlock_rdlock(&principal_conn_lock); // don't let the principal_conn be changed
   pthread_cleanup_push(rwlock_unlock, (void *)&principal_conn_lock);
-  if ((principal_conn != NULL) && (principal_conn->input_rate != 0)) {
-
-    int32_t frames_total =
-        metadata_store.progress_last_timestamp - metadata_store.progress_first_timestamp;
-    int32_t frames_played =
-        metadata_store.head_rtp_timestamp - metadata_store.progress_first_timestamp;
-    int32_t frames_remaining =
-        metadata_store.progress_last_timestamp - metadata_store.head_rtp_timestamp;
-
-    // if the timestamp that is about to be played is between the start and the finish, accept it as
-    // valid.
-    if ((frames_total >= 0) && (frames_played >= 0) && (frames_remaining >= 0)) {
-      debug(4, "progress: %g seconds, rate: %u.",
-            (1.0 * frames_played) / principal_conn->input_rate, principal_conn->input_rate);
-      position = 1000000; // microseconds
-      position = position * frames_played;
-      position = position / principal_conn->input_rate;
+  if (principal_conn != NULL) {
+    // first, figure out if we are using the progress string or the AirPlay plist information
+    int using_progress_string = 1; // guess it is the older progress string
+#ifdef CONFIG_AIRPLAY_2
+    // if we are playing an AirPlay 2 stream then
+    // we will only use the progress strings if plists have been disabled
+    // because the plist information is more reliable
+    if ((principal_conn->airplay_type == ap_2) &&
+        ((config.airplay_features & ((uint64_t)1 << 50)) != 0)) {
+      using_progress_string = 0;
     }
+#endif
+
+    if (using_progress_string != 0) {
+      // A playing state of 2 seems to mean "not really playing" even if audio (probably silence)
+      // is coming through from the player.
+      if ((principal_conn->input_rate != 0) && (metadata_store.npi.playing_state != 2) &&
+          (metadata_store.progress_string != NULL)) {
+
+        int32_t frames_total =
+            metadata_store.progress_last_timestamp - metadata_store.progress_first_timestamp;
+        int32_t frames_played =
+            metadata_store.head_rtp_timestamp - metadata_store.progress_first_timestamp;
+        int32_t frames_remaining =
+            metadata_store.progress_last_timestamp - metadata_store.head_rtp_timestamp;
+
+        debug(4,
+              "position: %g seconds, rate: %u. Start , Current, End Timestamps: %u, %u, %u. Total, "
+              "played, remaining frames: %d, %d, %d, total time: %g.",
+              (1.0 * frames_played) / principal_conn->input_rate, principal_conn->input_rate,
+              metadata_store.progress_first_timestamp, metadata_store.progress_current_timestamp,
+              metadata_store.progress_last_timestamp, frames_total, frames_played, frames_remaining,
+              (1.0 * frames_total) / principal_conn->input_rate);
+
+        // if the timestamp that is about to be played is between the start and the finish, accept
+        // it as valid.
+        if ((frames_total >= 0) && (frames_played >= 0) && (frames_remaining >= 0)) {
+          position = 1000000; // microseconds
+          position = position * frames_played;
+          position = position / principal_conn->input_rate;
+        }
+      }
+    } 
+    
+#ifdef CONFIG_AIRPLAY_2    
+    else {
+      // Using the plist information.
+      // If Shairport Sync is playing, start with the play time since the NowPlayingInfoTimestamp.
+      if (metadata_store.npi.nowPlayingInfoTimestamp.valid) {
+        position = get_absolute_time_in_ns() - metadata_store.npi.nowPlayingInfoTimestamp.value;
+      } else {
+        // Otherwise, add the stored subsequent elapsed time
+        position = metadata_store.npi.nowPlayingInfoSubsequentElapsedTime;
+      }
+      // add in the elapsed time recorded in the nowPlayingInfo bundle
+      position += metadata_store.npi.nowPlayingInfoPriorElapsedTime;
+      position /= 1000; // to microseconds
+    }
+#endif
+
   }
   pthread_cleanup_pop(1); // release the principal_conn lock
   return position;

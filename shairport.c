@@ -42,7 +42,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "config.h"
 
 #ifdef CONFIG_FFMPEG
 #include <libavutil/log.h>
@@ -839,8 +838,8 @@ int parse_options(int argc, char **argv) {
           config.get_plist_metadata = 1;
         else
           die("Invalid \"get_plist_metadata\" option choice \"%s\". It should be \"yes\" or "
-              "\"no\"",
-              str);
+              "\"no\". It is currently set to \"%s\".",
+              str, config.get_plist_metadata == 0 ? "no" : "yes");
       }
 
       /* Get the verbosity setting. */
@@ -1891,7 +1890,7 @@ int parse_options(int argc, char **argv) {
     if (config.get_plist_metadata != 0) {
       config.airplay_features |=
           (uint64_t)1 << 50; // richer metadata in a binary plist, including more state information
-      config.airplay_features |= (uint64_t)1 << 16; // ask for progress too
+      // config.airplay_features |= (uint64_t)1 << 16; // ask for progress too
 
     } else {
       // older metadata flags artwork, progress and text respectively
@@ -2612,6 +2611,7 @@ int main(int argc, char **argv) {
   config.configfile = configuration_file_path;
 
 #ifdef CONFIG_AIRPLAY_2
+  config.get_plist_metadata = 1; // default to using AirPlay-2-type plist information
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53, 10, 0)
   avcodec_init();
 #endif
