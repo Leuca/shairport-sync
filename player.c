@@ -1449,14 +1449,10 @@ void clear_buffers_from(rtsp_conn_info *conn, seq_t from_here) {
 
 #endif
 
-#ifdef CONFIG_FFMPEG
 uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp, uint8_t *data,
                            size_t len, int mute, int32_t timestamp_gap, rtsp_conn_info *conn) {
-#else
-uint32_t player_put_packet(uint32_t ssrc, seq_t seqno, uint32_t actual_timestamp, uint8_t *data,
-                           size_t len, __attribute__((unused)) int mute, int32_t timestamp_gap,
-                           rtsp_conn_info *conn) {
-#endif
+
+  (void) mute; // unused if FFmpeg is not in use.
 
   // clang-format off
   
@@ -3616,10 +3612,6 @@ void *player_thread_func(void *arg) {
   if (avflush(conn) > 1)
     debug(1, "ffmpeg flush at start!");
 #endif
-
-  // leave this relic -- jack and soundio still use it
-  if (config.output->start != NULL)
-    config.output->start(44100, SPS_FORMAT_S16_LE);
 
   conn->first_packet_timestamp = 0;
   conn->missing_packets = conn->late_packets = conn->too_late_packets = conn->resend_requests = 0;
