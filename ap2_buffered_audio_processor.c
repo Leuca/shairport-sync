@@ -388,34 +388,53 @@ void *rtp_buffered_audio_processor(void *arg) {
       pthread_mutex_lock_and_cleanup_push(&conn->flush_mutex);
       if (blocks_read != 0) {
         if (conn->ap2_immediate_flush_requested != 0) {
+          int flush_finished = 0;
           if (ap2_immediate_flush_requested == 0) {
-            debug(2, "immediate flush started at sequence number %u until sequence number of %u.",
+            debug(3, "immediate flush started at sequence number %u until sequence number of %u.",
                   seq_no, conn->ap2_immediate_flush_until_sequence_number);
           }
-          if ((blocks_read != 0) &&
-              ((a_minus_b_mod23(seq_no, conn->ap2_immediate_flush_until_sequence_number) > 0))) {
-
-            if (payload_ssrc == SSRC_NONE) {
-              debug(2,
-                    "immediate flush endpoint followed by a SSRC_NONE packet. Seq_no is %u, "
-                    "conn->ap2_immediate_flush_until_sequence_number is %u.",
-                    seq_no, conn->ap2_immediate_flush_until_sequence_number);
-
-            } else {
-              debug(1,
-                    "immediate flush may have escaped its endpoint! Seq_no is %u, "
-                    "conn->ap2_immediate_flush_until_sequence_number is %u.",
-                    seq_no, conn->ap2_immediate_flush_until_sequence_number);
+          
+          if (conn->ap2_immediate_flush_until_sequence_number != 0) {
+            if (a_minus_b_mod23(seq_no, conn->ap2_immediate_flush_until_sequence_number) > 0) {
+              if (payload_ssrc == SSRC_NONE) {
+                debug(3,
+                      "immediate flush endpoint followed by a SSRC_NONE packet. Seq_no is %u, "
+                      "conn->ap2_immediate_flush_until_sequence_number is %u.",
+                      seq_no, conn->ap2_immediate_flush_until_sequence_number);
+  
+              } else {
+                debug(3,
+                      "immediate flush may have escaped its endpoint! Seq_no is %u, "
+                      "conn->ap2_immediate_flush_until_sequence_number is %u.",
+                      seq_no, conn->ap2_immediate_flush_until_sequence_number);
+              }
+              flush_finished = 1;
             }
+  
+            if (a_minus_b_mod23(seq_no, conn->ap2_immediate_flush_until_sequence_number) >= 0) {
+              debug(3,
+                    "immediate flush completed at seq_no: %u, "
+                    "conn->ap2_immediate_flush_until_sequence_number: %u.",
+                    seq_no, conn->ap2_immediate_flush_until_sequence_number);
+              flush_finished = 1;
+            }
+          } else {
+            flush_finished = 1;
+          // A flush to Block 0 looks like a bug in HomePod OS 27.
+          /*
+            // look at the flushUntilTS and the present one
+            int32_t timestamp_difference = conn->ap2_immediate_flush_until_rtp_timestamp - timestamp;
+            debug(1, "ap2_immediate_flush_until_timestamp %u and current timestamp %u difference %d.",
+              conn->ap2_immediate_flush_until_rtp_timestamp,
+              timestamp,
+              timestamp_difference);
+            if (timestamp_difference <= 0) {
+              flush_finished = 1;
+            }
+          */
           }
-
-          if ((blocks_read != 0) &&
-              ((a_minus_b_mod23(seq_no, conn->ap2_immediate_flush_until_sequence_number) >= 0))) {
-            debug(2,
-                  "immediate flush completed at seq_no: %u, "
-                  "conn->ap2_immediate_flush_until_sequence_number: %u.",
-                  seq_no, conn->ap2_immediate_flush_until_sequence_number);
-
+          
+          if (flush_finished != 0) {
             conn->ap2_immediate_flush_requested = 0;
             ap2_immediate_flush_requested = 0;
             // debug(1, "flushed to %u, requested %u.", seq_no,
@@ -426,7 +445,7 @@ void *rtp_buffered_audio_processor(void *arg) {
             for (f = 0; f < MAX_DEFERRED_FLUSH_REQUESTS; f++) {
               if ((conn->ap2_deferred_flush_requests[f].inUse != 0) &&
                   (conn->ap2_deferred_flush_requests[f].active == 0)) {
-                debug(1,
+                debug(3,
                       "deferred flush cancelled by an immediate flush:  flushFromTS: %12u, "
                       "flushFromSeq: %12u, "
                       "flushUntilTS: %12u, flushUntilSeq: %12u, timestamp: %12u.",
@@ -440,7 +459,7 @@ void *rtp_buffered_audio_processor(void *arg) {
             }
 
           } else {
-            debug(4, "immediate flush of block %u until block %u", seq_no,
+            debug(3, "immediate flush of block %u until block %u", seq_no,
                   conn->ap2_immediate_flush_until_sequence_number);
             ap2_immediate_flush_requested = 1;
             new_audio_block_needed = 1; //
@@ -456,7 +475,7 @@ void *rtp_buffered_audio_processor(void *arg) {
         if (conn->ap2_deferred_flush_requests[f].inUse != 0) {
           if ((conn->ap2_deferred_flush_requests[f].flushFromSeq == seq_no) &&
               (conn->ap2_deferred_flush_requests[f].flushUntilSeq != seq_no)) {
-            debug(2,
+            debug(3,
                   "deferred flush activated:  flushFromTS: %12u, flushFromSeq: %12u, "
                   "flushUntilTS: %12u, flushUntilSeq: %12u, timestamp: %12u.",
                   conn->ap2_deferred_flush_requests[f].flushFromTS,
@@ -467,7 +486,7 @@ void *rtp_buffered_audio_processor(void *arg) {
             new_audio_block_needed = 1;
           }
           if (conn->ap2_deferred_flush_requests[f].flushUntilSeq == seq_no) {
-            debug(2,
+            debug(3,
                   "deferred flush terminated: flushFromTS: %12u, flushFromSeq: %12u, "
                   "flushUntilTS: %12u, flushUntilSeq: %12u, timestamp: %12u.",
                   conn->ap2_deferred_flush_requests[f].flushFromTS,
@@ -480,7 +499,7 @@ void *rtp_buffered_audio_processor(void *arg) {
                      0) {
             // now, do a modulo 2^23 unsigned int calculation to see if we may have overshot the
             // flushUntilSeq
-            debug(2,
+            debug(3,
                   "deferred flush terminated due to overshoot at block %u: flushFromTS: %12u, "
                   "flushFromSeq: %12u, "
                   "flushUntilTS: %12u, flushUntilSeq: %12u, timestamp: %12u.",
@@ -493,7 +512,7 @@ void *rtp_buffered_audio_processor(void *arg) {
             debug(2, "immediate flush was %s.", ap2_immediate_flush_requested == 0 ? "off" : "on");
           } else if (conn->ap2_deferred_flush_requests[f].active != 0) {
             new_audio_block_needed = 1;
-            debug(4,
+            debug(3,
                   "deferred flush of block: %u, timestamp: %u, SSRC: \"%s\". flushFromTS: %12u, "
                   "flushFromSeq: %12u, "
                   "flushUntilTS: %12u, flushUntilSeq: %12u, timestamp: %12u.",
@@ -707,7 +726,7 @@ void *rtp_buffered_audio_processor(void *arg) {
                 } else {
                   debug(3,
                         "skipped deciphering block %u with timestamp %u because its lead time is "
-                        "out of range at %f "
+                        "out of range at %g "
                         "seconds.",
                         seq_no, timestamp, lead_time * 1.0E-9);
                   uint32_t currentAnchorRTP = 0;

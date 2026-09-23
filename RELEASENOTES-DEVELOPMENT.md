@@ -1,12 +1,29 @@
+Version 5.6-dev-102-g69307b6f
+==
+**Stuff You Can't Ignore**
+* The Shared Memory Interface to NQPTP has been updated to Version 11, i.e. `smi11`. Please update to the latest `development` branch of NQPTP to use with this `development` branch of Shairport Sync.
+  
+**Enhancements**
+* These updates make clock handoff more unobtrusive, quicker and more reliable. Clock handoff can occur when you add another player, such as a HomePod or Apple TV, to the output devices. The clocks in such devices may take over clock "mastership" when they are added and can relinquish mastership when they are removed from the set of output devices.
+
+  Extra information is now passed through the SMI interface from NQPTP to Shairport Sync, and so the format of the SMI interface has changed, necessitating the increase in SMI version number from 10 to 11.
+
+  PTP utilities and associated functions have been simplified considerably and updated to handle the new information coming from NQPTP.
+
+**Other Changes**
+* The Jack Audio backend has been removed, having been previously deprecated.
+* The SoundIO backend has been removed, having been previously deprecated.
+* The outmoded `start()` function has been removed from each backend and replaced with the `prepare()` function where needed.
+
 Version 5.6-dev-95-gd3bef78e
 ==
 **Bug Fix**
-* Avoid reading more than the `max_packet_size` into the buffer during Buffered Audio reception. Associated with this, slightly rearrange the buffered reading code to avoid a compilation warning and a mishandling of a very small buffer read request. Thanks to [Dirk Mueller](https://github.com/dirkmueller) for the [PR](https://github.com/mikebrady/shairport-sync/pull/2295). 
+* Added a check to avoid reading more than the `max_packet_size` into the buffer during Buffered Audio reception. Associated with this, the buffered reading code has been slightly rearranged to avoid a compilation warning and a mishandling of a very small buffer read request. Thanks to [Dirk Mueller](https://github.com/dirkmueller) for the [PR](https://github.com/mikebrady/shairport-sync/pull/2295). 
 
 Version 5.6-dev-85-ge10120da
 ==
 **Bug Fix**
-* Stopped trying to expand environmental variables that may be mentioned (and may not exist) in comments in the configuration file. The fix is to remove all comments before expanding environmental variables.
+* Stopped trying to expand environmental variables that may be mentioned (and may not exist) in comments in the configuration file. The fix was to remove all comments before expanding environmental variables.
 
 Version 5.6-dev-83-ga7df0098
 ==

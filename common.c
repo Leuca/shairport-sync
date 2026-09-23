@@ -1928,9 +1928,6 @@ char *get_version_string() {
 #ifdef CONFIG_PIPEWIRE
     strcat(version_string, "-PipeWire");
 #endif
-#ifdef CONFIG_SOUNDIO
-    strcat(version_string, "-soundio");
-#endif
 #ifdef CONFIG_DUMMY
     strcat(version_string, "-dummy");
 #endif
