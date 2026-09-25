@@ -2045,6 +2045,7 @@ void handle_feedback(rtsp_conn_info *conn, __attribute__((unused)) rtsp_message 
 }
 
 void handle_command(rtsp_conn_info *conn, rtsp_message *req, rtsp_message *resp) {
+  (void) req;
   // first, check that this is an airplay 2 session
   if (conn->airplay_type == ap_2) {
 #ifdef CONFIG_METADATA
@@ -3566,7 +3567,9 @@ static void handle_announce(rtsp_conn_info *conn, rtsp_message *req, rtsp_messag
       free(aeskey);
     }
 
-    if (pfmtp) {
+    // an fmtp line can accompany an L16 rtpmap (pyatv, and so Home Assistant, sends both),
+    // so only treat the stream as ALAC if it wasn't already identified as uncompressed PCM
+    if ((pfmtp) && (pUncompressedCDAudio == NULL)) {
       conn->stream.type = ast_apple_lossless;
       debug(3, "An ALAC stream has been detected.");
 

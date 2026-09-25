@@ -1881,6 +1881,9 @@ char *get_version_string() {
     snprintf(smiv, 1024, "-smi%u", NQPTP_SHM_STRUCTURES_VERSION);
     strcat(version_string, smiv);
 #endif
+#ifdef CONFIG_HAMMERTON
+    strcat(version_string, "-Hammerton");
+#endif
 #ifdef CONFIG_APPLE_ALAC
     strcat(version_string, "-alac");
 #endif
@@ -1918,6 +1921,9 @@ char *get_version_string() {
 #endif
 #ifdef CONFIG_SNDIO
     strcat(version_string, "-sndio");
+#endif
+#ifdef CONFIG_COREAUDIO
+    strcat(version_string, "-coreaudio");
 #endif
 #ifdef CONFIG_AO
     strcat(version_string, "-ao");
